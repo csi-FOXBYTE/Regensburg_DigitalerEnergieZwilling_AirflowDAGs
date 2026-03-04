@@ -31,6 +31,7 @@ This repository now contains a default Docker-based Apache Airflow setup and you
    ```powershell
    docker compose up -d airflow-webserver airflow-scheduler
    ```
+   This also starts LocalStack S3 and creates the configured test bucket.
 6. Open UI: <http://localhost:8080>
    - Username: value of `_AIRFLOW_WWW_USER_USERNAME` (default `airflow`)
    - Password: value of `_AIRFLOW_WWW_USER_PASSWORD` (default `airflow`)
@@ -67,6 +68,96 @@ This repository now contains a default Docker-based Apache Airflow setup and you
    docker compose logs -f airflow-scheduler
    ```
 8. Verify outputs in your `CITYJSON_WORK_DIR` host folder (mounted to `/work` in the container).
+
+## Debugging
+
+Use these commands for focused task-level debugging instead of full DAG runs.
+
+1. Start Airflow services:
+   ```powershell
+   docker compose up -d airflow-webserver airflow-scheduler
+   ```
+2. Test a single task for one logical date:
+   ```powershell
+   docker compose exec airflow-webserver airflow tasks test citygml_zip_to_storage extract_citygml_zip 2026-03-04
+   ```
+3. Watch scheduler logs in parallel:
+   ```powershell
+   docker compose logs -f airflow-scheduler
+   ```
+4. Add task code logs for variable/state inspection:
+   ```python
+   import logging
+   log = logging.getLogger(__name__)
+   log.info("Value X=%s", x)
+   ```
+5. Use Python debugger for step-by-step inspection:
+   ```python
+   import pdb; pdb.set_trace()
+   ```
+
+### Debugging DockerOperator issues
+
+To isolate Airflow from container execution issues, run the same container command directly:
+
+```powershell
+docker run --rm `
+  -v "<ABS_WORK_DIR>:/work" `
+  -e APPEARANCE=rgbTexture `
+  ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:latest
+```
+
+If `docker run` fails, fix image/mount/env first. If it succeeds but Airflow task fails, inspect Airflow task logs and operator parameters.
+
+## LocalStack S3 simulation (external source)
+
+The compose setup includes LocalStack with only S3 enabled.
+
+- Container endpoint (for DAG code running in Airflow containers): `http://localstack:4566`
+- Host endpoint (for tools on your machine): `http://localhost:4566`
+- Bucket name: value of `S3_BUCKET` in `.env` (default `external-downloads`)
+- Preconfigured S3 GUI: `http://localhost:3000` (or `S3_GUI_PORT` from `.env`)
+
+### Verify S3 is up and bucket exists
+
+```powershell
+docker compose up -d localstack localstack-s3-init
+docker compose exec localstack awslocal s3 ls
+```
+
+### Open the S3 GUI
+
+```powershell
+docker compose up -d s3-gui
+```
+
+Then open:
+
+- <http://localhost:3000> (or your configured `S3_GUI_PORT`)
+
+The GUI is preconfigured for:
+
+- endpoint `http://localstack:4566`
+- bucket `S3_BUCKET`
+- credentials `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`
+- path-style addressing (required for LocalStack)
+
+### Upload a sample object for download testing
+
+```powershell
+docker compose exec localstack sh -c "echo 'demo-file' > /tmp/sample.txt && awslocal s3 cp /tmp/sample.txt s3://${S3_BUCKET:-external-downloads}/sample.txt"
+docker compose exec localstack awslocal s3 ls s3://${S3_BUCKET:-external-downloads}
+```
+
+### Environment variables for DAG implementation
+
+Set in `.env` (see `.env.example`):
+
+- `S3_ENDPOINT_URL` (default `http://localstack:4566`)
+- `S3_REGION` (default `eu-central-1`)
+- `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` (default `test` / `test`)
+- `S3_BUCKET` (default `external-downloads`)
+- `S3_GUI_PORT` (default `3000`)
 
 ## Multi-step ZIP pipeline
 
