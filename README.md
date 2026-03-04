@@ -116,7 +116,7 @@ The compose setup includes LocalStack with only S3 enabled.
 - Container endpoint (for DAG code running in Airflow containers): `http://localstack:4566`
 - Host endpoint (for tools on your machine): `http://localhost:4566`
 - Bucket name: value of `S3_BUCKET` in `.env` (default `external-downloads`)
-- Preconfigured S3 GUI: `http://localhost:3000` (or `S3_GUI_PORT` from `.env`)
+- Preconfigured S3 GUI (Flask app in `s3-gui/app.py`): `http://localhost:3000` (or `S3_GUI_PORT` from `.env`)
 
 ### Verify S3 is up and bucket exists
 
@@ -141,6 +141,9 @@ The GUI is preconfigured for:
 - bucket `S3_BUCKET`
 - credentials `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`
 - path-style addressing (required for LocalStack)
+
+Use the `Upload` section in the GUI to add files, and check the `Objects` table for uploaded keys.
+If you still see an older UI in browser cache, do a hard refresh (`Ctrl+F5`) once.
 
 ### Upload a sample object for download testing
 
