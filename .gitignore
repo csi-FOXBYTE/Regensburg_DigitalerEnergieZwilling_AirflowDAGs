@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+
+# Airflow runtime artifacts
+logs/
+tmp/
+venv/
+.venv/
+
