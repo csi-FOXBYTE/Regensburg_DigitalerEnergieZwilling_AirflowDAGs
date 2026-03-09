@@ -1,9 +1,9 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.models.param import Param
+from airflow.providers.standard.operators.python import PythonOperator
+from airflow.models import Param
+from airflow.sdk.definitions.param import ParamsDict
 from datetime import datetime
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-import requests
 import os
 
 
@@ -27,7 +27,7 @@ with DAG(
     schedule=None,
     catchup=False,
     tags=["S3", "Host", "Download"],
-    params={
+    params=ParamsDict({
         "bucket": Param(
             default="",
             type="string",
@@ -48,7 +48,7 @@ with DAG(
             type="string",
             description="Filename to use for the downloaded object",
         ),
-    },
+    }),
 ) as dag:
 
     def download_task_callable(**context):
