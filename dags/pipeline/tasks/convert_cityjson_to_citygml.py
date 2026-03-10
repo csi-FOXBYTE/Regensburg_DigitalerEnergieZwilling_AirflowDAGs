@@ -19,5 +19,5 @@ def makeConvertCityJSONToCityGMLTask(fromDir: str, toDir: str) -> BaseOperator:
       )
     ],
     docker_url=DOCKER_HOST,
-    command=f"to-cityjson /data/{fromDir} --output /data/{toDir}"
+    command=f"to-cityjson /work/{fromDir} --output /work/{toDir}"
   )

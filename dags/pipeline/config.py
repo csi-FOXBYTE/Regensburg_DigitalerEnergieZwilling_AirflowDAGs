@@ -9,7 +9,9 @@ def _normalize_docker_host_path(path: str) -> str:
     return path
 
 GML_TOOLS_IMAGE = "ghcr.io/csi-foxbyte/citygml-tools-docker:latest"
+JSON_TO_3D_TILES_IMAGE = "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:latest"
 DOCKER_HOST = os.getenv("DOCKER_HOST", "unix://var/run/docker.sock")
+
 WORK_DIR = _normalize_docker_host_path(os.getenv(
     "CITYJSON_WORK_DIR",
     "/opt/airflow/data/cityjson-to-3d-tiles",
