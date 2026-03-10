@@ -1,6 +1,5 @@
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.sdk import Param
 from airflow.sdk.definitions.param import ParamsDict
 import os
 
@@ -17,12 +16,10 @@ def download_from_s3(bucket: str, key: str, dest: str):
 
 
 def download_task_callable(params):
-    if "bucket" not in params:
-        raise ValueError(f"Missing required parameter: bucket")
-    if "key" not in params:
-        raise ValueError(f"Missing required parameter: key")
-    if "target_filename" not in params:
-        raise ValueError(f"Missing required parameter: target_filenname")
+    required_parameters = ["bucket", "key", "dest_dir", "target_filename"]
+    for rq in required_parameters:
+        if not params.get(rq):
+            raise ValueError(f"Missing parameter: {rq}")
 
     dest_dir = params.get("dest_dir") or STORAGE_DIR_ON_HOST
     dest_path = os.path.join(dest_dir, params["target_filename"])

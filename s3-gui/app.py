@@ -2,36 +2,10 @@ from __future__ import annotations
 
 import os
 from typing import Any
-
-import boto3
-from botocore.config import Config
+from s3 import _build_s3_client
+from s3 import S3_BUCKET_NAME, S3_REGION, S3_ENDPOINT_URL
 from botocore.exceptions import ClientError
 from flask import Flask, redirect, render_template_string, request, url_for
-
-
-S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "http://localstack:4566")
-S3_REGION = os.getenv("S3_REGION", "eu-central-1")
-S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID", "test")
-S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "test")
-S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "external-downloads")
-S3_FORCE_PATH_STYLE = os.getenv("S3_FORCE_PATH_STYLE", "true").lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
-
-
-def _build_s3_client():
-    addressing_style = "path" if S3_FORCE_PATH_STYLE else "virtual"
-    return boto3.client(
-        "s3",
-        endpoint_url=S3_ENDPOINT_URL,
-        region_name=S3_REGION,
-        aws_access_key_id=S3_ACCESS_KEY_ID,
-        aws_secret_access_key=S3_SECRET_ACCESS_KEY,
-        config=Config(s3={"addressing_style": addressing_style}),
-    )
 
 
 def _ensure_bucket(client) -> None:
