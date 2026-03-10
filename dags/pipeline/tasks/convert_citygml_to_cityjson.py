@@ -1,10 +1,24 @@
 from airflow.providers.docker.operators.docker import DockerOperator
-from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import BaseOperator
+from docker.types import Mount
+from pipeline.config import *
 
 
-def makeConvertCityGMLToCityJSONTask() -> BaseOperator:
-  return PythonOperator(
+def makeConvertCityGMLToCityJSONTask(fromDir: str, toDir: str) -> BaseOperator:
+  return DockerOperator(
     task_id="convert_citygml_to_cityjson",
-    python_callable=lambda **context: print("TODO: convert_citygml_to_cityjson not implemented"),
+    image=GML_TOOLS_IMAGE,
+    api_version="auto",
+    auto_remove="success",
+    mount_tmp_dir=False,
+    mounts=[
+      Mount(
+        source=WORK_DIR,
+        target="/work",
+        type="bind"
+      )
+    ],
+    docker_url=DOCKER_HOST,
+    command=f"to-cityjson /data/{fromDir} --output /data/{toDir}"
   )
+  
