@@ -1,7 +1,7 @@
 from airflow.sdk import DAG, Param
 from airflow.sdk.definitions.param import ParamsDict
 from datetime import datetime
-from pipeline.tasks.download import download
+from pipeline.tasks.download import make_download_task
 from pipeline.tasks.extract_zip import extract_zip
 from pipeline.tasks.convert_citygml_to_cityjson import makeConvertCityGMLToCityJSONTask
 from pipeline.tasks.enrich_cityjson import makeEnrichCityJSONTask
@@ -40,7 +40,7 @@ with DAG(
         ),
     }),
 ) as dag:
-  download_task = download()
+  download_task = make_download_task()
   extract_task = extract_zip()
   gml_to_json_task = makeConvertCityGMLToCityJSONTask("gml_in", "json")
   enrich_task = makeEnrichCityJSONTask("json")
