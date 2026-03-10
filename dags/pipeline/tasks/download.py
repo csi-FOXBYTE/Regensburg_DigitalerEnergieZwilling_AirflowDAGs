@@ -1,6 +1,5 @@
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from airflow.sdk.definitions.param import ParamsDict
 import os
 
 def download_from_s3(bucket: str, key: str, dest: str):
