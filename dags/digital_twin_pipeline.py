@@ -2,12 +2,12 @@ from airflow.sdk import DAG, Param
 from airflow.sdk.definitions.param import ParamsDict
 from datetime import datetime
 from pipeline.tasks.download import make_download_task
-from pipeline.tasks.extract_zip import extract_zip
-from pipeline.tasks.convert_citygml_to_cityjson import makeConvertCityGMLToCityJSONTask
-from pipeline.tasks.enrich_cityjson import makeEnrichCityJSONTask
-from pipeline.tasks.convert_cityjson_to_3dtiles import makeConvertCityJSONTo3DTilesTask
-from pipeline.tasks.convert_cityjson_to_citygml import makeConvertCityJSONToCityGMLTask
-from pipeline.tasks.upload import upload
+from pipeline.tasks.extract_zip import make_extract_zip_task
+from pipeline.tasks.convert_citygml_to_cityjson import make_convert_citygml_to_cityjson_task
+from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
+from pipeline.tasks.convert_cityjson_to_3dtiles import make_convert_cityjson_to_3dtiles_task
+from pipeline.tasks.convert_cityjson_to_citygml import make_convert_cityjson_to_citygml_task
+from pipeline.tasks.upload import make_upload_task
 
 DAG_ID = "digital_twin_pipeline"
 
@@ -21,31 +21,34 @@ with DAG(
         "bucket": Param(
             default="",
             type="string",
-            description="Name of the S3 bucket containing the object",
+            description="Name of the S3 bucket containing the zip file",
         ),
         "key": Param(
             default="",
             type="string",
-            description="Key (path) of the object in the bucket",
+            description="Key (path) of the zip file in the bucket — also used as the local filename",
         ),
-        "dest_dir": Param(
+        "tiles_output_bucket": Param(
             default="",
             type="string",
-            description="Host directory to save the downloaded file (defaults to storage dir)",
+            description="S3 bucket to upload the 3D tiles output to",
         ),
-        "target_filename": Param(
-            default="downloaded_file.zip",
+        "gml_output_bucket": Param(
+            default="",
             type="string",
-            description="Filename to use for the downloaded object",
+            description="S3 bucket to upload the CityGML output to",
         ),
     }),
 ) as dag:
-  download_task = make_download_task()
-  extract_task = extract_zip()
-  gml_to_json_task = makeConvertCityGMLToCityJSONTask("gml_in", "json")
-  enrich_task = makeEnrichCityJSONTask("json")
-  json_to_3d_task = makeConvertCityJSONTo3DTilesTask("json", "3d_tiles")
-  json_to_gml_task = makeConvertCityJSONToCityGMLTask("json", "gml_out")
-  upload_task = upload()
+    download_task = make_download_task()
+    extract_task = make_extract_zip_task()
+    gml_to_json_task = make_convert_citygml_to_cityjson_task("gml_in", "json")
+    enrich_task = make_enrich_cityjson_task("json")
+    json_to_3d_task = make_convert_cityjson_to_3dtiles_task("json", "3d_tiles")
+    json_to_gml_task = make_convert_cityjson_to_citygml_task("json", "gml_out")
+    upload_tiles_task = make_upload_task("upload_tiles", "3d_tiles", "tiles_output_bucket")
+    upload_gml_task = make_upload_task("upload_gml", "gml_out", "gml_output_bucket")
 
-  _ = download_task >> extract_task >> gml_to_json_task >> enrich_task >> [json_to_3d_task, json_to_gml_task] >> upload_task
+    download_task >> extract_task >> gml_to_json_task >> enrich_task
+    enrich_task >> json_to_3d_task >> upload_tiles_task
+    enrich_task >> json_to_gml_task >> upload_gml_task

@@ -4,7 +4,7 @@ from docker.types import Mount
 from pipeline.config import *
 
 
-def makeConvertCityGMLToCityJSONTask(fromDir: str, toDir: str) -> BaseOperator:
+def make_convert_citygml_to_cityjson_task(fromDir: str, toDir: str) -> BaseOperator:
   return DockerOperator(
     task_id="convert_citygml_to_cityjson",
     image=GML_TOOLS_IMAGE,

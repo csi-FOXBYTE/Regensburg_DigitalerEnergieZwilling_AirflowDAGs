@@ -1,6 +1,8 @@
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 import os
+from pipeline.config import WORK_DIR
+
 
 def download_from_s3(bucket: str, key: str, dest: str):
     hook = S3Hook(aws_conn_id="aws_default")
@@ -11,23 +13,19 @@ def download_from_s3(bucket: str, key: str, dest: str):
     obj.download_file(dest)
 
 
-def download_task_callable(bucket: str, key: str, dest_dir: str, target_filename: str):
-    dest_path = os.path.join(dest_dir, target_filename)
-    download_from_s3(
-        bucket,
-        key,
-        dest_path,
-    )
+def _download_callable(params):
+    bucket = params.get("bucket")
+    key = params.get("key")
+    if not bucket:
+        raise ValueError("Missing param: bucket")
+    if not key:
+        raise ValueError("Missing param: key")
+    dest = os.path.join(WORK_DIR, "zip", key)
+    download_from_s3(bucket, key, dest)
 
 
-def make_download_task(bucket: str, key: str, dest_dir: str, target_filename: str) -> PythonOperator:
+def make_download_task() -> PythonOperator:
     return PythonOperator(
         task_id="download_file_task",
-        python_callable=download_task_callable,
-        op_kwargs={
-            'bucket': bucket,
-            'key': key,
-            'dest_dir': dest_dir,
-            'target_filename': target_filename,
-        },
+        python_callable=_download_callable,
     )

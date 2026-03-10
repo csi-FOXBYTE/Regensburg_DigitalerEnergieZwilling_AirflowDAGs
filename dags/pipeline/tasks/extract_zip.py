@@ -1,21 +1,28 @@
 from airflow.providers.standard.operators.python import PythonOperator
 import os
 import zipfile
+from pipeline.config import WORK_DIR
 
-def extract_zip_callable(src_dir: str, dest_dir: str, zip_name: str):
-    zip_path = os.path.join(src_dir, zip_name)
+
+def extract_zip(zip_path: str, dest: str):
     if not os.path.isfile(zip_path):
         raise FileNotFoundError(f"Zip file not found: {zip_path}")
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        zip_ref.extractall(dest_dir)
+        zip_ref.extractall(dest)
 
-def make_extract_zip_task(src_dir: str, dest_dir: str, zip_name: str) -> PythonOperator:
+
+def _extract_zip_callable(params):
+    key = params.get("key")
+    if not key:
+        raise ValueError("Missing param: key")
+    extract_zip(
+        zip_path=os.path.join(WORK_DIR, "zip", key),
+        dest=os.path.join(WORK_DIR, "gml_in"),
+    )
+
+
+def make_extract_zip_task() -> PythonOperator:
     return PythonOperator(
         task_id="extract_zip",
-        python_callable=extract_zip_callable,
-        op_kwargs={
-            'src_dir': src_dir,
-            'dest_dir': dest_dir,
-            'zip_name': zip_name,
-        },
+        python_callable=_extract_zip_callable,
     )
