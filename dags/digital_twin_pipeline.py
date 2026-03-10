@@ -43,8 +43,8 @@ with DAG(
   download_task = download()
   extract_task = extract_zip()
   gml_to_json_task = makeConvertCityGMLToCityJSONTask("gml_in", "json")
-  enrich_task = makeEnrichCityJSONTask()
-  json_to_3d_task = makeConvertCityJSONTo3DTilesTask()
+  enrich_task = makeEnrichCityJSONTask("json")
+  json_to_3d_task = makeConvertCityJSONTo3DTilesTask("json", "3d_tiles")
   json_to_gml_task = makeConvertCityJSONToCityGMLTask("json", "gml_out")
   upload_task = upload()
 
