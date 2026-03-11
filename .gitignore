@@ -8,3 +8,4 @@ tmp/
 venv/
 .venv/
 
+workdir/
