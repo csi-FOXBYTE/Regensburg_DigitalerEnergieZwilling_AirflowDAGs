@@ -1,14 +1,20 @@
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+import shutil
 import os
 from pipeline.config import WORK_DIR
 
 
-def _cleanup_callable():
-    return
+def _cleanup_callable(directories: list[str]):
+    for directory in directories:
+        dir_path = os.path.join(WORK_DIR, directory)
+        if os.path.exists(dir_path):
+           shutil.rmtree(dir_path)
+        else:
+            print(f"Directory does not exist: {dir_path}")    
 
 def make_cleanup_task(directories: list[str]) -> PythonOperator:
     return PythonOperator(
         task_id="download_file_task",
         python_callable=_cleanup_callable,
+        op_kwargs={"directories": directories},
     )
