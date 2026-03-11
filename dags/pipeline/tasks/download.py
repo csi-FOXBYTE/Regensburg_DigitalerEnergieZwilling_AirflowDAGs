@@ -4,10 +4,11 @@ import os
 from pipeline.config import WORK_DIR
 
 def download_from_s3(bucket: str, key: str, dest: str):
-    hook = S3Hook(aws_conn_id="aws_default")
+    hook = S3Hook(aws_conn_id=None)
     obj = hook.get_key(key, bucket_name=bucket)
     if obj is None:
         raise FileNotFoundError(f"s3://{bucket}/{key} not found")
+    print(dest)
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     obj.download_file(dest)
 
