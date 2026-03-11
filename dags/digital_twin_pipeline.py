@@ -1,4 +1,5 @@
-from airflow.sdk import DAG, Param
+from airflow import DAG
+from airflow.models import Param 
 from airflow.sdk.definitions.param import ParamsDict
 from datetime import datetime
 from pipeline.tasks.download import make_download_task

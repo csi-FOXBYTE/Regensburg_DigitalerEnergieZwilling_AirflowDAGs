@@ -1,5 +1,5 @@
 from airflow.providers.docker.operators.docker import DockerOperator
-from airflow.sdk import BaseOperator
+from airflow.models import BaseOperator
 from docker.types import Mount
 from pipeline.config import *
 

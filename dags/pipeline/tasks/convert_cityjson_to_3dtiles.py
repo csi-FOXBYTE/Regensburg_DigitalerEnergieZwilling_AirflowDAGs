@@ -1,5 +1,5 @@
 from airflow.providers.docker.operators.docker import DockerOperator
-from airflow.sdk import BaseOperator
+from airflow.models import BaseOperator
 from docker.types import Mount
 import os
 from pipeline.config import JSON_TO_3D_TILES_IMAGE, DOCKER_HOST, WORK_DIR
