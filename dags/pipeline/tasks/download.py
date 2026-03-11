@@ -3,7 +3,6 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 import os
 from pipeline.config import WORK_DIR
 
-
 def download_from_s3(bucket: str, key: str, dest: str):
     hook = S3Hook(aws_conn_id="aws_default")
     obj = hook.get_key(key, bucket_name=bucket)
