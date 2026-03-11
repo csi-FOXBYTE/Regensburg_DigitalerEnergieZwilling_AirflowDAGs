@@ -19,25 +19,26 @@ with DAG(
     tags=["S3", "Host", "Download"],
     params=ParamsDict({
         "bucket": Param(
-            default="",
             type="string",
             description="Name of the S3 bucket containing the zip file",
         ),
         "key": Param(
-            default="",
             type="string",
             description="Key (path) of the zip file in the bucket — also used as the local filename",
         ),
         "tiles_output_bucket": Param(
-            default="",
             type="string",
             description="S3 bucket to upload the 3D tiles output to",
         ),
         "gml_output_bucket": Param(
-            default="",
             type="string",
             description="S3 bucket to upload the CityGML output to",
         ),
+        "source_crs": Param(
+            default="+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs",
+            type="string",
+            description="Source Coordinate System"
+        )
     }),
 ) as dag:
     download_task = make_download_task()

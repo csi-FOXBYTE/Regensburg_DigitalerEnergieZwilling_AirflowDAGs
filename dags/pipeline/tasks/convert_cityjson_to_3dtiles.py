@@ -4,9 +4,6 @@ from docker.types import Mount
 import os
 from pipeline.config import JSON_TO_3D_TILES_IMAGE, DOCKER_HOST, WORK_DIR
 
-
-SRC_SRS = os.getenv("CITYJSON_SRC_SRS", "")
-
 container_env = {
     "APPEARANCE": os.getenv("CITYJSON_APPEARANCE", "rgbTexture"),
     "THREAD_COUNT": os.getenv("CITYJSON_THREAD_COUNT", "4"),
@@ -14,10 +11,6 @@ container_env = {
     "SIMPLIFY_ADDRESSES": os.getenv("CITYJSON_SIMPLIFY_ADDRESSES", "false"),
     "SHOW_STACK_TRACE": os.getenv("CITYJSON_SHOW_STACK_TRACE", "false"),
 }
-
-if SRC_SRS:
-    container_env["SRC_SRS"] = SRC_SRS
-
 
 def make_convert_cityjson_to_3dtiles_task(fromDir: str, toDir: str) -> BaseOperator:
     return DockerOperator(
@@ -38,6 +31,9 @@ def make_convert_cityjson_to_3dtiles_task(fromDir: str, toDir: str) -> BaseOpera
                 type="bind",
             ),
         ],
-        environment=container_env,
+        environment={
+            **container_env,
+            "SRC_SRS": "{{ params.source_crs if params.source_crs is not none else '' }}",
+        },
         docker_url=DOCKER_HOST,
     )

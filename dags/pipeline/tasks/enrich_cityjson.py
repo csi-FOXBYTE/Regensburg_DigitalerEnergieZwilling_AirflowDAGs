@@ -20,7 +20,9 @@ def make_enrich_cityjson_task(dir: str) -> BaseOperator:
         api_version="auto",
         auto_remove="success",
         mount_tmp_dir=False,
-        environment=container_env,
+        environment={
+            "SOURCE_CRS_FALLBACK": "{{ params.source_crs if params.source_crs is not none else '' }}"
+        },
         mounts=[
             Mount(
                 source=f"{WORK_DIR}/{dir}",
