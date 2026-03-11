@@ -85,6 +85,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs:z
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config:z
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins:z
+    - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
