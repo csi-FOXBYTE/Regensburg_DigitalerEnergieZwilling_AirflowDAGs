@@ -1,5 +1,5 @@
-from airflow import DAG
-from airflow.models import Param 
+from airflow.sdk import DAG, Param
+from airflow.sdk.definitions.param import ParamsDict
 from datetime import datetime
 from pipeline.tasks.download import make_download_task
 from pipeline.tasks.extract_zip import make_extract_zip_task
@@ -17,7 +17,7 @@ with DAG(
     schedule=None,
     catchup=False,
     tags=["S3", "Host", "Download"],
-    params={
+    params=ParamsDict({
         "bucket": Param(
             type="string",
             description="Name of the S3 bucket containing the zip file",
@@ -39,7 +39,7 @@ with DAG(
             type="string",
             description="Source Coordinate System"
         )
-    },
+    }),
 ) as dag:
     download_task = make_download_task()
     extract_task = make_extract_zip_task()
