@@ -1,6 +1,6 @@
 from airflow.providers.standard.operators.python import PythonOperator
 import os
-from s3 import _build_s3_client
+from pipeline.s3 import _build_s3_client
 
 
 def upload_folder(src_dir: str, bucket: str):

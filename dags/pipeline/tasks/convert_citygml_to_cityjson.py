@@ -9,16 +9,17 @@ def make_convert_citygml_to_cityjson_task(fromDir: str, toDir: str) -> BaseOpera
         task_id="convert_citygml_to_cityjson",
         image=GML_TOOLS_IMAGE,
         api_version="auto",
-        auto_remove="success",
+        auto_remove="never",
         mount_tmp_dir=False,
+        retrieve_output=True,
         mounts=[
             Mount(
-                source=WORK_DIR,
+                source="airflow-data",
                 target="/work",
-                type="bind",
+                type="volume",
             )
         ],
         docker_url=DOCKER_HOST,
-        command=f"to-cityjson /work/{fromDir} --output /work/{toDir}"
+        command=f"to-cityjson /work/{fromDir}/*.gml --output /work/{toDir}"
     )
   

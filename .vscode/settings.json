@@ -1,3 +1,40 @@
 {
-  "python-envs.defaultEnvManager": "ms-python.python:venv"
+  "python-envs.defaultEnvManager": "ms-python.python:venv",
+  
+  "terminal.integrated.env.linux": {
+    "AIRFLOW_HOME": "${workspaceFolder}/.airflow"
+  },
+  "terminal.integrated.env.osx": {
+    "AIRFLOW_HOME": "${workspaceFolder}/.airflow"
+  },
+  "terminal.integrated.env.windows": {
+    "AIRFLOW_HOME": "${workspaceFolder}\\.airflow"
+  },
+
+  "python.terminal.useEnvFile": true,
+  "python.envFile": "${workspaceFolder}/.env",
+
+  "terminal.integrated.profiles.linux": {
+    "airflow": {
+      "path": "bash",
+      "args": ["-c", "source start.sh; exec bash"]
+    }
+  },
+  "terminal.integrated.defaultProfile.linux": "airflow",
+
+  "terminal.integrated.profiles.osx": {
+    "airflow": {
+      "path": "bash",
+      "args": ["-c", "source start.sh; exec bash"]
+    }
+  },
+  "terminal.integrated.defaultProfile.osx": "airflow",
+
+  "terminal.integrated.profiles.windows": {
+    "airflow": {
+      "path": "cmd.exe",
+      "args": ["/k", "start.bat"]
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "airflow"
 }
