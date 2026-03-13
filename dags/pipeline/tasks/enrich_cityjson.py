@@ -30,5 +30,6 @@ def make_enrich_cityjson_task(dir: str) -> BaseOperator:
                 type="bind",
             )
         ],
+        user=f"{os.getuid()}:{os.getgid()}",
         docker_url=DOCKER_HOST,
     )

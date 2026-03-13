@@ -64,7 +64,7 @@ services:
       S3_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-test}"
       S3_BUCKET_NAME: "${S3_BUCKET:-external-downloads}"
       S3_REGION: "${AWS_DEFAULT_REGION:-eu-central-1}"
-      S3_ENDPOINT_URL: "${AWS_ENDPOINT_URL_S3:-http://localstack:4566}"
+      S3_ENDPOINT_URL: "http://localstack:4566"
       S3_FORCE_PATH_STYLE: "true"
     ports:
       - "${S3_GUI_PORT:-3000}:3000"

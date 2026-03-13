@@ -21,19 +21,18 @@ def make_convert_cityjson_to_3dtiles_task(fromDir: str, toDir: str) -> BaseOpera
         mount_tmp_dir=False,
         mounts=[
             Mount(
-                source=f"{WORK_DIR}/{fromDir}",
-                target="/work/cityjson",
-                type="bind",
-            ),
-            Mount(
-                source=f"{WORK_DIR}/{toDir}",
-                target="/work/tiles",
+                source=WORK_DIR,
+                target="/work",
                 type="bind",
             ),
         ],
         environment={
             **container_env,
             "SRC_SRS": "{{ params.source_crs if params.source_crs is not none else '' }}",
+            "INPUT_DIR": f"/work/{fromDir}",
+            "OUTPUT_DIR": f"/work/{toDir}",
+            "SKIP_CONVERSION": "true"
         },
+        user=f"{os.getuid()}:{os.getgid()}",
         docker_url=DOCKER_HOST,
     )
