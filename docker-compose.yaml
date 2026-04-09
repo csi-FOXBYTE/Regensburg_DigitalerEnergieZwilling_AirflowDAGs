@@ -38,18 +38,37 @@ services:
 
         if aws --endpoint-url "$$endpoint" s3api head-bucket --bucket "$$bucket" >/dev/null 2>&1; then
           echo "Bucket already exists: $$bucket"
-          exit 0
-        fi
-
-        if [ "$$region" = "us-east-1" ]; then
-          aws --endpoint-url "$$endpoint" s3api create-bucket --bucket "$$bucket"
         else
-          aws --endpoint-url "$$endpoint" s3api create-bucket \
-            --bucket "$$bucket" \
-            --create-bucket-configuration LocationConstraint="$$region"
+          if [ "$$region" = "us-east-1" ]; then
+            aws --endpoint-url "$$endpoint" s3api create-bucket --bucket "$$bucket"
+          else
+            aws --endpoint-url "$$endpoint" s3api create-bucket \
+              --bucket "$$bucket" \
+              --create-bucket-configuration LocationConstraint="$$region"
+          fi
+
+          echo "Created bucket: $$bucket"
         fi
 
-        echo "Created bucket: $$bucket"
+        cat >/tmp/cors.json <<'EOF'
+        {
+          "CORSRules": [
+            {
+              "AllowedOrigins": ["http://localhost:4321"],
+              "AllowedMethods": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+              "AllowedHeaders": ["*"],
+              "ExposeHeaders": ["ETag"],
+              "MaxAgeSeconds": 3000
+            }
+          ]
+        }
+        EOF
+
+        aws --endpoint-url "$$endpoint" s3api put-bucket-cors \
+          --bucket "$$bucket" \
+          --cors-configuration file:///tmp/cors.json
+
+        echo "Applied CORS to bucket: $$bucket"
     restart: "no"
 
   s3-gui:
