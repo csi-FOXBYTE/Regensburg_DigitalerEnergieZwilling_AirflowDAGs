@@ -21,7 +21,8 @@ def make_enrich_cityjson_task(dir: str) -> BaseOperator:
         auto_remove="success",
         mount_tmp_dir=False,
         environment={
-            "SOURCE_CRS_FALLBACK": "{{ params.source_crs if params.source_crs is not none else '' }}"
+            "SOURCE_CRS_FALLBACK": "{{ params.source_crs if params.source_crs is not none else '' }}",
+            "ADJACENCY": "1",
         },
         mounts=[
             Mount(
