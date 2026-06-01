@@ -44,21 +44,26 @@ def _active_bucket(args) -> str:
     return bucket if bucket in S3_BUCKET_NAMES else S3_BUCKET_NAMES[0]
 
 
-def _list_objects(client, bucket: str) -> list[dict[str, Any]]:
-    objects: list[dict[str, Any]] = []
-    paginator = client.get_paginator("list_objects_v2")
-    for page in paginator.paginate(Bucket=bucket):
-        for item in page.get("Contents", []):
-            objects.append(
-                {
-                    "key": item["Key"],
-                    "size": int(item.get("Size", 0)),
-                    "last_modified": item["LastModified"].isoformat(),
-                }
-            )
+PAGE_SIZE = 200
 
-    objects.sort(key=lambda item: item["key"])
-    return objects
+
+def _list_objects_page(
+    client, bucket: str, continuation_token: str | None = None
+) -> tuple[list[dict[str, Any]], str | None]:
+    kwargs: dict[str, Any] = {"Bucket": bucket, "MaxKeys": PAGE_SIZE}
+    if continuation_token:
+        kwargs["ContinuationToken"] = continuation_token
+
+    resp = client.list_objects_v2(**kwargs)
+    objects = [
+        {
+            "key": item["Key"],
+            "size": int(item.get("Size", 0)),
+            "last_modified": item["LastModified"].isoformat(),
+        }
+        for item in resp.get("Contents", [])
+    ]
+    return objects, resp.get("NextContinuationToken")
 
 
 app = Flask(__name__)
@@ -144,7 +149,7 @@ TEMPLATE = """<!doctype html>
   </div>
 
   <div class="card">
-    <h2>Objects ({{ objects|length }})</h2>
+    <h2>Objects &mdash; showing {{ objects|length }}{% if next_token %} (more available){% endif %}</h2>
     {% if objects %}
       <table>
         <thead>
@@ -172,8 +177,14 @@ TEMPLATE = """<!doctype html>
           {% endfor %}
         </tbody>
       </table>
-      <div style="margin-top: 1rem;">
-        <form action="/clear" method="post" onsubmit="return confirm('Delete all objects in {{ bucket }}?')">
+      <div style="display:flex; gap:1rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
+        {% if token %}
+          <a href="{{ url_for('index', bucket=bucket) }}">&laquo; First page</a>
+        {% endif %}
+        {% if next_token %}
+          <a href="{{ url_for('index', bucket=bucket, token=next_token) }}">Next page &raquo;</a>
+        {% endif %}
+        <form action="/clear" method="post" onsubmit="return confirm('Delete all objects in {{ bucket }}?')" style="margin-left:auto;">
           <input type="hidden" name="bucket" value="{{ bucket }}">
           <button class="danger" type="submit">Clear Bucket</button>
         </form>
@@ -192,9 +203,11 @@ def index():
     message = request.args.get("msg", "")
     error = request.args.get("err", "")
     bucket = _active_bucket(request.args)
+    token = request.args.get("token") or None
+    next_token = None
     try:
         client = _build_s3_client()
-        objects = _list_objects(client, bucket)
+        objects, next_token = _list_objects_page(client, bucket, continuation_token=token)
     except Exception as exc:  # noqa: BLE001
         objects = []
         error = str(exc)
@@ -206,6 +219,8 @@ def index():
         buckets=S3_BUCKET_NAMES,
         bucket=bucket,
         objects=objects,
+        token=token,
+        next_token=next_token,
         message=message,
         error=error,
     )

@@ -18,5 +18,5 @@ def make_cleanup_task(directories: list[str]) -> PythonOperator:
         task_id="cleanup",
         python_callable=_cleanup_callable,
         op_kwargs={"directories": directories},
-        trigger_rule= TriggerRule.ALL_DONE
+        trigger_rule=TriggerRule.ALL_SUCCESS
     )

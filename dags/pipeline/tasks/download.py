@@ -29,3 +29,22 @@ def make_download_task() -> PythonOperator:
         task_id="download_file_task",
         python_callable=_download_callable,
     )
+
+
+def _download_gpkg_callable(params):
+    age_zones_key = params.get("age_zones_key")
+    if not age_zones_key:
+        print("Skipping age zones download: age_zones_key not set")
+        return
+    bucket = params.get("bucket")
+    if not bucket:
+        raise ValueError("Missing param: bucket")
+    dest = os.path.join(WORK_DIR, "gpkg", "age_zones.gpkg")
+    download_from_s3(bucket, age_zones_key, dest)
+
+
+def make_download_gpkg_task() -> PythonOperator:
+    return PythonOperator(
+        task_id="download_gpkg_task",
+        python_callable=_download_gpkg_callable,
+    )
