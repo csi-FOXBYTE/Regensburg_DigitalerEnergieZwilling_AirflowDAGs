@@ -1,4 +1,6 @@
 import os
+import re
+
 
 def _normalize_docker_host_path(path: str) -> str:
     """Normalize Windows paths for Linux Docker daemon inside Airflow containers."""
@@ -7,6 +9,7 @@ def _normalize_docker_host_path(path: str) -> str:
         rest = path[3:].replace("\\", "/")
         return f"/mnt/{drive}/{rest}"
     return path
+
 
 GML_TOOLS_IMAGE = "ghcr.io/csi-foxbyte/citygml-tools-docker:latest"
 ENRICH_IMAGE = "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:latest"
@@ -17,3 +20,11 @@ WORK_DIR = _normalize_docker_host_path(os.getenv(
     "CITYJSON_WORK_DIR",
     "/opt/airflow/data/cityjson-to-3d-tiles",
 ))
+
+
+def sanitize_job_id(run_id: str) -> str:
+    return re.sub(r"[^\w\-]", "-", run_id).strip("-")
+
+
+def get_job_dir(run_id: str) -> str:
+    return os.path.join(WORK_DIR, "jobs", sanitize_job_id(run_id))

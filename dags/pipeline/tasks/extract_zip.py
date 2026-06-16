@@ -1,28 +1,31 @@
-from airflow.providers.standard.operators.python import PythonOperator
 import os
 import zipfile
-from pipeline.config import WORK_DIR
+from airflow.providers.standard.operators.python import PythonOperator
+from pipeline.config import get_job_dir
+from pipeline import manifest as mf
 
 
-def extract_zip(zip_path: str, dest: str):
-    if not os.path.isfile(zip_path):
-        raise FileNotFoundError(f"Zip file not found: {zip_path}")
-    with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        zip_ref.extractall(dest)
-
-
-def _extract_zip_callable(params):
+def _extract_zip_callable(params, run_id, task_id):
+    job_dir = get_job_dir(run_id)
     key = params.get("key")
     if not key:
         raise ValueError("Missing param: key")
-    extract_zip(
-        zip_path=os.path.join(WORK_DIR, "zip", key),
-        dest=os.path.join(WORK_DIR, "gml_in"),
-    )
+    mf.update_step(job_dir, task_id, "running")
+    try:
+        zip_path = os.path.join(job_dir, "zip", key)
+        if not os.path.isfile(zip_path):
+            raise FileNotFoundError(f"Zip file not found: {zip_path}")
+        with zipfile.ZipFile(zip_path, "r") as z:
+            z.extractall(os.path.join(job_dir, "gml_in"))
+        mf.update_step(job_dir, task_id, "success")
+    except Exception as e:
+        mf.update_step(job_dir, task_id, "failed", error=str(e))
+        raise
 
 
 def make_extract_zip_task() -> PythonOperator:
     return PythonOperator(
         task_id="extract_zip",
         python_callable=_extract_zip_callable,
+        op_kwargs={"task_id": "extract_zip"},
     )

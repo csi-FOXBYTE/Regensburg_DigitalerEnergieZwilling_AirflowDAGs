@@ -1,25 +1,17 @@
-from airflow.providers.docker.operators.docker import DockerOperator
+import os
 from airflow.models import BaseOperator
-from docker.types import Mount
-from pipeline.config import *
+from pipeline.config import GML_TOOLS_IMAGE, DOCKER_HOST
+from pipeline.operators.job_docker_operator import JobDockerOperator
 
 
-def make_convert_citygml_to_cityjson_task(fromDir: str, toDir: str) -> BaseOperator:
-    return DockerOperator(
+def make_convert_citygml_to_cityjson_task(from_dir: str, to_dir: str) -> BaseOperator:
+    return JobDockerOperator(
         task_id="convert_citygml_to_cityjson",
         image=GML_TOOLS_IMAGE,
         api_version="auto",
         auto_remove="success",
         mount_tmp_dir=False,
-        mounts=[
-            Mount(
-                source=WORK_DIR,
-                target="/work",
-                type="bind",
-            )
-        ],
         user=f"{os.getuid()}:{os.getgid()}",
         docker_url=DOCKER_HOST,
-        command=f"to-cityjson /work/{fromDir} --output /work/{toDir}"
+        command=f"to-cityjson /work/{from_dir} --output /work/{to_dir}",
     )
-  
