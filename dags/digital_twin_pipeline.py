@@ -10,6 +10,7 @@ from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
 from pipeline.tasks.convert_cityjson_to_3dtiles import make_convert_cityjson_to_3dtiles_task
 from pipeline.tasks.convert_cityjson_to_citygml import make_convert_cityjson_to_citygml_task
 from pipeline.tasks.upload import make_upload_task, make_clear_bucket_task
+from pipeline.tasks.cleanup import make_cleanup_task
 from pipeline.config import get_job_dir
 from pipeline import manifest as mf
 
@@ -30,6 +31,7 @@ STEP_NAMES = [
     "upload_tiles",
     "upload_address_db",
     "upload_gml",
+    "cleanup",
     "finalize_manifest",
 ]
 
@@ -85,6 +87,7 @@ with DAG(
     upload_tiles_task = make_upload_task("upload_tiles", "3d_tiles", "tiles_output_bucket")
     upload_address_db_task = make_upload_task("upload_address_db", "address_db", "tiles_output_bucket")
     upload_gml_task = make_upload_task("upload_gml", "gml_out", "gml_output_bucket")
+    cleanup_task = make_cleanup_task(DIRS)
     finalize_task = PythonOperator(
         task_id="finalize_manifest",
         python_callable=_finalize_callable,
@@ -97,4 +100,4 @@ with DAG(
     enrich_task >> json_to_3d_task >> clear_tiles_bucket_task
     clear_tiles_bucket_task >> [upload_tiles_task, upload_address_db_task]
     enrich_task >> json_to_gml_task >> upload_gml_task
-    [upload_tiles_task, upload_address_db_task, upload_gml_task] >> finalize_task
+    [upload_tiles_task, upload_address_db_task, upload_gml_task] >> cleanup_task >> finalize_task
