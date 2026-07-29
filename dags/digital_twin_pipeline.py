@@ -73,6 +73,19 @@ with DAG(
             type=["string", "null"],
             description="Optional key of the Baualtersklassen GeoPackage in the input bucket",
         ),
+        "geothermal_key": Param(
+            default=None,
+            type=["string", "null"],
+            description="Optional key of the geothermal GeoPackage in the input bucket",
+        ),
+        "skip_cleanup": Param(
+            default=False,
+            type="boolean",
+            description=(
+                "Keep downloaded inputs and generated artifacts in the run "
+                "workspace after successful uploads"
+            ),
+        ),
     }),
 ) as dag:
     preparation_task = make_preparation_task(DIRS, DAG_ID, STEP_NAMES)
@@ -80,14 +93,20 @@ with DAG(
     download_gpkg_task = make_download_gpkg_task()
     extract_task = make_extract_zip_task()
     gml_to_json_task = make_convert_citygml_to_cityjson_task("gml_in", "json")
-    enrich_task = make_enrich_cityjson_task("json", "enriched_json", "address_db", with_age_zones=True)
+    enrich_task = make_enrich_cityjson_task(
+        "json",
+        "enriched_json",
+        "address_db",
+        with_age_zones=True,
+        with_geothermal=True,
+    )
     json_to_3d_task = make_convert_cityjson_to_3dtiles_task("enriched_json", "3d_tiles")
     json_to_gml_task = make_convert_cityjson_to_citygml_task("enriched_json", "gml_out")
     clear_tiles_bucket_task = make_clear_bucket_task("clear_tiles_bucket", "tiles_output_bucket")
     upload_tiles_task = make_upload_task("upload_tiles", "3d_tiles", "tiles_output_bucket")
     upload_address_db_task = make_upload_task("upload_address_db", "address_db", "tiles_output_bucket")
     upload_gml_task = make_upload_task("upload_gml", "gml_out", "gml_output_bucket")
-    cleanup_task = make_cleanup_task(DIRS)
+    cleanup_task = make_cleanup_task(DIRS, honor_skip_cleanup=True)
     finalize_task = PythonOperator(
         task_id="finalize_manifest",
         python_callable=_finalize_callable,

@@ -9,6 +9,7 @@ def make_enrich_cityjson_task(
     out_dir: str,
     address_db_dir: str,
     with_age_zones: bool = False,
+    with_geothermal: bool = False,
 ) -> BaseOperator:
     environment = {
         "SOURCE_CRS_FALLBACK": "{{ params.source_crs if params.source_crs is not none else '' }}",
@@ -19,6 +20,8 @@ def make_enrich_cityjson_task(
     }
     if with_age_zones:
         environment["AGE_ZONES_FILE"] = "{{ '/work/gpkg/age_zones.gpkg' if params.get('age_zones_key') else '' }}"
+    if with_geothermal:
+        environment["GEOTHERMAL_FILE"] = "{{ '/work/gpkg/geothermal.gpkg' if params.get('geothermal_key') else '' }}"
 
     return JobDockerOperator(
         task_id="enrich_cityjson",

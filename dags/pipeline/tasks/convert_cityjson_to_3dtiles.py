@@ -9,6 +9,10 @@ _container_env = {
     "THREAD_COUNT": os.getenv("CITYJSON_THREAD_COUNT", "4"),
     "HAS_ALPHA_ENABLED": os.getenv("CITYJSON_HAS_ALPHA_ENABLED", "true"),
     "SIMPLIFY_ADDRESSES": os.getenv("CITYJSON_SIMPLIFY_ADDRESSES", "false"),
+    "SEMANTIC_SURFACE_COLORS": os.getenv(
+        "CITYJSON_SEMANTIC_SURFACE_COLORS",
+        '{"RoofSurface":"#e30613"}',
+    ),
     "SHOW_STACK_TRACE": os.getenv("CITYJSON_SHOW_STACK_TRACE", "false"),
 }
 

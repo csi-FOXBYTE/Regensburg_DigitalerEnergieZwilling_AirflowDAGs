@@ -41,9 +41,17 @@ def make_download_task() -> PythonOperator:
 
 def _download_gpkg_callable(params, run_id, task_id):
     job_dir = get_job_dir(run_id)
-    age_zones_key = params.get("age_zones_key")
-    if not age_zones_key:
-        print("Skipping age zones download: age_zones_key not set")
+    sources = [
+        ("age_zones_key", "age zones", "age_zones.gpkg"),
+        ("geothermal_key", "geothermal data", "geothermal.gpkg"),
+    ]
+    downloads = [
+        (label, key, filename)
+        for param_name, label, filename in sources
+        if (key := params.get(param_name))
+    ]
+    if not downloads:
+        print("Skipping GeoPackage downloads: no enrichment data keys set")
         mf.update_step(job_dir, task_id, "skipped")
         return
     bucket = params.get("bucket")
@@ -51,7 +59,9 @@ def _download_gpkg_callable(params, run_id, task_id):
         raise ValueError("Missing param: bucket")
     mf.update_step(job_dir, task_id, "running")
     try:
-        download_from_s3(bucket, age_zones_key, os.path.join(job_dir, "gpkg", "age_zones.gpkg"))
+        for label, key, filename in downloads:
+            print(f"Downloading {label} from s3://{bucket}/{key}")
+            download_from_s3(bucket, key, os.path.join(job_dir, "gpkg", filename))
         mf.update_step(job_dir, task_id, "success")
     except Exception as e:
         mf.update_step(job_dir, task_id, "failed", error=str(e))

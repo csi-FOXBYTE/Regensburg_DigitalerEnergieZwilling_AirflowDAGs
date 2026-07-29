@@ -61,8 +61,16 @@ Processes a CityGML ZIP from S3 through the full pipeline and uploads results ba
 | `tiles_output_bucket` | S3 bucket for 3D Tiles output |
 | `gml_output_bucket` | S3 bucket for CityGML output |
 | `source_crs` | Source CRS (default: UTM zone 32 / GRS80) |
+| `age_zones_key` | Optional key of the Baualtersklassen GeoPackage in the input bucket |
+| `geothermal_key` | Optional key of the geothermal GeoPackage in the input bucket |
+| `skip_cleanup` | Keep the complete run workspace after successful uploads for debugging (default: `false`) |
 
-To do a test run: upload a ZIP to S3 via the S3 GUI, then trigger the DAG from the Airflow UI with the parameters above.
+To do a test run, upload a ZIP to S3 via the S3 GUI. To include the
+optional enrichment datasets, also upload `test_data/Baualtersklassen.gpkg`
+and/or `test_data/Geothermie.gpkg` and set their object keys in
+`age_zones_key` and `geothermal_key`. Then trigger the DAG from the Airflow UI.
+Set `skip_cleanup` to `true` to retain the downloaded inputs and generated
+artifacts after a successful run. Failed runs retain their artifacts regardless.
 
 ## DAG: `dgm1_terrain_pipeline`
 
