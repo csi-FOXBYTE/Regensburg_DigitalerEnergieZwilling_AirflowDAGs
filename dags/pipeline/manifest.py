@@ -6,7 +6,21 @@ import datetime
 from pipeline.config import WORK_DIR
 
 
-ARTIFACT_DIRS = ["json", "enriched_json", "gml_in", "gml_out", "3d_tiles", "address_db", "gpkg", "zip"]
+ARTIFACT_DIRS = [
+    "json",
+    "enriched_json",
+    "gml_in",
+    "gml_out",
+    "3d_tiles",
+    "address_db",
+    "gpkg",
+    "zip",
+    "dgm1_sources",
+    "dgm1_metadata",
+    "dgm1_vrt",
+    "terrain",
+    "terrain_validation",
+]
 
 
 def _discover_artifacts(job_dir: str) -> dict[str, str]:
@@ -36,6 +50,7 @@ def create_manifest(
             "source": f"s3://{params.get('bucket')}/{params.get('key')}" if params.get("bucket") else None,
             "tiles_output_bucket": params.get("tiles_output_bucket"),
             "gml_output_bucket": params.get("gml_output_bucket"),
+            "terrain_output_bucket": params.get("terrain_output_bucket"),
         },
         "started_at": _now(),
         "finished_at": None,

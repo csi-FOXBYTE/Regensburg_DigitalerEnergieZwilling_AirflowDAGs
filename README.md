@@ -64,6 +64,60 @@ Processes a CityGML ZIP from S3 through the full pipeline and uploads results ba
 
 To do a test run: upload a ZIP to S3 via the S3 GUI, then trigger the DAG from the Airflow UI with the parameters above.
 
+## DAG: `dgm1_terrain_pipeline`
+
+Converts all 368 DGM1 GeoTIFFs referenced by the repository-root
+`dgm1.meta4` into an EPSG:4326 Cesium Quantized Mesh terrain tileset at zoom
+levels 0 through 18.
+
+The full-only pipeline:
+
+1. Parses the Metalink and removes its repeated URLs.
+2. Downloads the TIFFs with bounded concurrency, retries, and `.part` file
+   resume support.
+3. Uses digest-pinned GDAL 3.13.2 Docker tasks to inspect every TIFF, calculate
+   SHA-256 hashes, and build a VRT mosaic.
+4. Uses digest-pinned CTB 0.4.1 to generate Cesium-friendly Quantized Mesh
+   terrain with oct-encoded vertex normals.
+5. Normalizes gzip-compressed CTB output to raw `.terrain`, if necessary.
+6. Validates zoom coverage, representative low/middle/high tiles, Quantized
+   Mesh structure, normal extensions, and the local HTTP loading contract used
+   by `CesiumTerrainProvider.fromUrl(...)`.
+7. Clears the dedicated output bucket, uploads every terrain tile, and uploads
+   `layer.json` last.
+
+The VRT references the source files and avoids creating another large raster
+mosaic. CTB performs the horizontal transformation from EPSG:25832 to its
+EPSG:4326 geodetic terrain profile. Heights are treated as DHHN2016 and are not
+vertically transformed.
+
+Trigger parameters:
+
+| Parameter | Description |
+|---|---|
+| `terrain_output_bucket` | Dedicated S3 bucket whose contents are replaced by the validated terrain tileset |
+| `skip_cleanup` | Keep the complete run workspace after successful publication for debugging (default: `false`) |
+
+The output bucket must already exist. It is cleared only after local validation
+passes. `layer.json` is uploaded last so a new Cesium client cannot discover a
+partially uploaded replacement. Failed runs always retain their workspace.
+Successful runs retain it when `skip_cleanup` is `true`.
+
+Large source lists, hashes, and raster data are stored in the run workspace,
+not XCom. Concurrency can be adjusted with `DGM1_DOWNLOAD_WORKERS`,
+`DGM1_CTB_THREADS`, and `DGM1_UPLOAD_WORKERS`.
+
+Data attribution embedded in `layer.json`:
+
+> Bayerische Vermessungsverwaltung – www.geodaten.bayern.de
+>
+> Source DGM1 data converted to Cesium Quantized Mesh; DHHN2016 heights
+> preserved without vertical transformation.
+
+The Bavarian DGM1 source data is provided under CC BY 4.0. The project remains
+licensed under LGPL-3.0-or-later; GDAL and CTB retain their respective upstream
+licenses.
+
 ## LocalStack S3
 
 - Host endpoint: `http://localhost:4566`
