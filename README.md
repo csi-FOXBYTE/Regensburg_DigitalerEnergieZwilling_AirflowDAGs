@@ -49,7 +49,7 @@ Processes a CityGML ZIP from S3 through the full pipeline and uploads results ba
 1. `ensure_dirs` → `download` → `extract_zip` → `gml_to_cityjson` → `enrich`
 2. From `enrich` (parallel):
    - `json_to_3dtiles` → `upload_tiles`
-   - `json_to_citygml` → `upload_gml`
+   - `json_to_citygml` → `clear_gml_bucket` → `upload_gml`
 3. `cleanup` (runs after both uploads)
 
 **Trigger parameters:**
@@ -59,7 +59,7 @@ Processes a CityGML ZIP from S3 through the full pipeline and uploads results ba
 | `bucket` | S3 bucket containing the input ZIP |
 | `key` | Key (path) of the ZIP in the bucket |
 | `tiles_output_bucket` | S3 bucket for 3D Tiles output |
-| `gml_output_bucket` | S3 bucket for CityGML output |
+| `gml_output_bucket` | Dedicated S3 bucket whose contents are replaced by the CityGML output |
 | `source_crs` | Source CRS (default: UTM zone 32 / GRS80) |
 | `age_zones_key` | Optional key of the Baualtersklassen GeoPackage in the input bucket |
 | `geothermal_key` | Optional key of the geothermal GeoPackage in the input bucket |
@@ -71,6 +71,8 @@ and/or `test_data/Geothermie.gpkg` and set their object keys in
 `age_zones_key` and `geothermal_key`. Then trigger the DAG from the Airflow UI.
 Set `skip_cleanup` to `true` to retain the downloaded inputs and generated
 artifacts after a successful run. Failed runs retain their artifacts regardless.
+The GML output bucket is cleared only after CityGML conversion succeeds and
+immediately before the generated files are uploaded.
 
 ## DAG: `dgm1_terrain_pipeline`
 

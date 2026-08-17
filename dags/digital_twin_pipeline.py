@@ -28,6 +28,7 @@ STEP_NAMES = [
     "generate_tiles",
     "convert_cityjson_to_citygml",
     "clear_tiles_bucket",
+    "clear_gml_bucket",
     "upload_tiles",
     "upload_address_db",
     "upload_gml",
@@ -103,6 +104,7 @@ with DAG(
     json_to_3d_task = make_convert_cityjson_to_3dtiles_task("enriched_json", "3d_tiles")
     json_to_gml_task = make_convert_cityjson_to_citygml_task("enriched_json", "gml_out")
     clear_tiles_bucket_task = make_clear_bucket_task("clear_tiles_bucket", "tiles_output_bucket")
+    clear_gml_bucket_task = make_clear_bucket_task("clear_gml_bucket", "gml_output_bucket")
     upload_tiles_task = make_upload_task("upload_tiles", "3d_tiles", "tiles_output_bucket")
     upload_address_db_task = make_upload_task("upload_address_db", "address_db", "tiles_output_bucket")
     upload_gml_task = make_upload_task("upload_gml", "gml_out", "gml_output_bucket")
@@ -118,5 +120,5 @@ with DAG(
     download_gpkg_task >> enrich_task
     enrich_task >> json_to_3d_task >> clear_tiles_bucket_task
     clear_tiles_bucket_task >> [upload_tiles_task, upload_address_db_task]
-    enrich_task >> json_to_gml_task >> upload_gml_task
+    enrich_task >> json_to_gml_task >> clear_gml_bucket_task >> upload_gml_task
     [upload_tiles_task, upload_address_db_task, upload_gml_task] >> cleanup_task >> finalize_task

@@ -24,6 +24,16 @@ class EnrichmentPipelineTest(unittest.TestCase):
         cleanup_task = digital_twin_dag.get_task("cleanup")
         self.assertTrue(cleanup_task.op_kwargs["honor_skip_cleanup"])
 
+    def test_gml_bucket_is_cleared_before_upload(self):
+        clear_task = digital_twin_dag.get_task("clear_gml_bucket")
+
+        self.assertEqual(clear_task.op_kwargs["bucket_param"], "gml_output_bucket")
+        self.assertEqual(
+            clear_task.upstream_task_ids,
+            {"convert_cityjson_to_citygml"},
+        )
+        self.assertEqual(clear_task.downstream_task_ids, {"upload_gml"})
+
     def test_enrichment_uses_version_0_6_0_and_optional_geopackages(self):
         task = make_enrich_cityjson_task(
             "json",
