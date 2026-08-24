@@ -2,15 +2,15 @@ import concurrent.futures
 import json
 from pathlib import Path
 
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.standard.operators.python import PythonOperator
 
 from pipeline import manifest as mf
 from pipeline.config import DGM1_UPLOAD_WORKERS, get_job_dir
+from pipeline.s3_connection import get_s3_hook
 from pipeline.terrain_validation import TERRAIN_MEDIA_TYPE
 
 
-def _publish_terrain_callable(params, run_id, task_id):
+def _publish_terrain_callable(params, run_id, task_id, aws_conn_id):
     job_dir = Path(get_job_dir(run_id))
     mf.update_step(str(job_dir), task_id, "running")
     try:
@@ -23,7 +23,7 @@ def _publish_terrain_callable(params, run_id, task_id):
         if not layer_path.is_file() or not tile_paths:
             raise FileNotFoundError("Validated terrain output is incomplete")
 
-        hook = S3Hook(aws_conn_id=None)
+        hook = get_s3_hook(aws_conn_id)
         client = hook.get_conn()
         deleted_count = _clear_bucket(client, bucket)
         print(f"Cleared {deleted_count} object(s) from s3://{bucket}/")
@@ -125,11 +125,11 @@ def _upload_tile(client, bucket: str, terrain_dir: Path, tile_path: Path) -> Non
     )
 
 
-def make_publish_terrain_task() -> PythonOperator:
+def make_publish_terrain_task(aws_conn_id: str) -> PythonOperator:
     return PythonOperator(
         task_id="publish_terrain",
         python_callable=_publish_terrain_callable,
-        op_kwargs={"task_id": "publish_terrain"},
+        op_kwargs={"task_id": "publish_terrain", "aws_conn_id": aws_conn_id},
     )
 
 

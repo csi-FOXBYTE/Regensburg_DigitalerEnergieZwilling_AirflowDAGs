@@ -5,9 +5,9 @@ services:
     environment:
       SERVICES: s3
       DEBUG: "${LOCALSTACK_DEBUG:-0}"
-      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-eu-central-1}"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-test}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-test}"
+      AWS_DEFAULT_REGION: "${LOCALSTACK_S3_REGION:-eu-central-1}"
+      AWS_ACCESS_KEY_ID: "${LOCALSTACK_S3_ACCESS_KEY_ID:-test}"
+      AWS_SECRET_ACCESS_KEY: "${LOCALSTACK_S3_SECRET_ACCESS_KEY:-test}"
     ports:
       - "4566:4566"
     volumes:
@@ -25,9 +25,9 @@ services:
       localstack:
         condition: service_healthy
     environment:
-      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-eu-central-1}"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-test}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-test}"
+      AWS_DEFAULT_REGION: "${LOCALSTACK_S3_REGION:-eu-central-1}"
+      AWS_ACCESS_KEY_ID: "${LOCALSTACK_S3_ACCESS_KEY_ID:-test}"
+      AWS_SECRET_ACCESS_KEY: "${LOCALSTACK_S3_SECRET_ACCESS_KEY:-test}"
     entrypoint: /bin/sh
     command:
       - -c
@@ -77,10 +77,10 @@ services:
       context: .
       dockerfile: s3-gui/Dockerfile
     environment:
-      S3_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      S3_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      S3_ACCESS_KEY_ID: "${S3_GUI_ACCESS_KEY_ID}"
+      S3_SECRET_ACCESS_KEY: "${S3_GUI_SECRET_ACCESS_KEY}"
       S3_BUCKET_NAMES: "${S3_BUCKET_NAMES:-det-rg-upload,det-rg-gml,det-rg-json,det-rg-main}"
-      S3_REGION: "${AWS_DEFAULT_REGION:-eu-central-1}"
+      S3_REGION: "${S3_GUI_REGION:-eu-central-1}"
       S3_ENDPOINT_URL: "${S3_GUI_ENDPOINT}"
       S3_FORCE_PATH_STYLE: "true"
     ports:

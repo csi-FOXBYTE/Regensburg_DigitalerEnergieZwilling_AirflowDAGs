@@ -1,12 +1,12 @@
 import os
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from pipeline.config import get_job_dir
 from pipeline import manifest as mf
+from pipeline.s3_connection import get_s3_hook
 
 
-def download_from_s3(bucket: str, key: str, dest: str):
-    hook = S3Hook(aws_conn_id=None)
+def download_from_s3(bucket: str, key: str, dest: str, aws_conn_id: str):
+    hook = get_s3_hook(aws_conn_id)
     obj = hook.get_key(key, bucket_name=bucket)
     if obj is None:
         raise FileNotFoundError(f"s3://{bucket}/{key} not found")
@@ -14,7 +14,7 @@ def download_from_s3(bucket: str, key: str, dest: str):
     obj.download_file(dest)
 
 
-def _download_callable(params, run_id, task_id):
+def _download_callable(params, run_id, task_id, aws_conn_id):
     job_dir = get_job_dir(run_id)
     bucket = params.get("bucket")
     key = params.get("key")
@@ -24,22 +24,27 @@ def _download_callable(params, run_id, task_id):
         raise ValueError("Missing param: key")
     mf.update_step(job_dir, task_id, "running")
     try:
-        download_from_s3(bucket, key, os.path.join(job_dir, "zip", key))
+        download_from_s3(
+            bucket,
+            key,
+            os.path.join(job_dir, "zip", key),
+            aws_conn_id,
+        )
         mf.update_step(job_dir, task_id, "success")
     except Exception as e:
         mf.update_step(job_dir, task_id, "failed", error=str(e))
         raise
 
 
-def make_download_task() -> PythonOperator:
+def make_download_task(aws_conn_id: str) -> PythonOperator:
     return PythonOperator(
         task_id="download_file_task",
         python_callable=_download_callable,
-        op_kwargs={"task_id": "download_file_task"},
+        op_kwargs={"task_id": "download_file_task", "aws_conn_id": aws_conn_id},
     )
 
 
-def _download_gpkg_callable(params, run_id, task_id):
+def _download_gpkg_callable(params, run_id, task_id, aws_conn_id):
     job_dir = get_job_dir(run_id)
     sources = [
         ("age_zones_key", "age zones", "age_zones.gpkg"),
@@ -61,16 +66,21 @@ def _download_gpkg_callable(params, run_id, task_id):
     try:
         for label, key, filename in downloads:
             print(f"Downloading {label} from s3://{bucket}/{key}")
-            download_from_s3(bucket, key, os.path.join(job_dir, "gpkg", filename))
+            download_from_s3(
+                bucket,
+                key,
+                os.path.join(job_dir, "gpkg", filename),
+                aws_conn_id,
+            )
         mf.update_step(job_dir, task_id, "success")
     except Exception as e:
         mf.update_step(job_dir, task_id, "failed", error=str(e))
         raise
 
 
-def make_download_gpkg_task() -> PythonOperator:
+def make_download_gpkg_task(aws_conn_id: str) -> PythonOperator:
     return PythonOperator(
         task_id="download_gpkg_task",
         python_callable=_download_gpkg_callable,
-        op_kwargs={"task_id": "download_gpkg_task"},
+        op_kwargs={"task_id": "download_gpkg_task", "aws_conn_id": aws_conn_id},
     )

@@ -21,9 +21,15 @@ from pipeline.terrain_validation import (
     is_gzip_encoded,
     validate_tileset,
 )
+from dgm1_terrain_pipeline import dag as terrain_dag
 
 
 class TerrainPipelineTest(unittest.TestCase):
+    def test_publish_uses_the_terrain_dag_connection(self):
+        task = terrain_dag.get_task("publish_terrain")
+
+        self.assertEqual(task.op_kwargs["aws_conn_id"], "det_rg_s3")
+
     def test_project_metalink_deduplicates_repeated_urls(self):
         path = Path(__file__).resolve().parents[1] / "dgm1.meta4"
         sources = parse_metalink(path)
@@ -122,19 +128,25 @@ class TerrainPipelineTest(unittest.TestCase):
                 hook = mock.Mock()
                 hook.get_conn.return_value = client
                 with (
-                    mock.patch.object(terrain_publish, "S3Hook", return_value=hook),
+                    mock.patch.object(
+                        terrain_publish,
+                        "get_s3_hook",
+                        return_value=hook,
+                    ) as get_s3_hook,
                     mock.patch.object(terrain_publish, "DGM1_UPLOAD_WORKERS", 1),
                 ):
                     terrain_publish._publish_terrain_callable(
                         {"terrain_output_bucket": "terrain"},
                         run_id,
                         "publish_terrain",
+                        "det_rg_s3",
                     )
 
             self.assertEqual(client.deleted, ["obsolete"])
             self.assertEqual(client.uploads[-1][0], "layer.json")
             self.assertEqual(client.uploads[0][0], "0/0/0.terrain")
             self.assertNotIn("ContentEncoding", client.uploads[0][1])
+            get_s3_hook.assert_called_once_with("det_rg_s3")
 
     def test_normalization_streams_gzip_and_fixes_ctb_metadata(self):
         with tempfile.TemporaryDirectory() as directory:

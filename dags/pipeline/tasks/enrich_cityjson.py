@@ -13,6 +13,7 @@ def make_enrich_cityjson_task(
 ) -> BaseOperator:
     environment = {
         "SOURCE_CRS_FALLBACK": "{{ params.source_crs if params.source_crs is not none else '' }}",
+        "MUNICIPALITY_KEY": "{{ params.municipality_key }}",
         "ADJACENCY": "1",
         "INPUT_DIR": f"/work/{src_dir}",
         "OUTPUT_DIR": f"/work/{out_dir}",

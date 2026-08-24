@@ -37,6 +37,14 @@ Start Airflow:
 airflow standalone
 ```
 
+The S3 clients are configured through the project-specific Airflow connection
+environment variable `AIRFLOW_CONN_DET_RG_S3` from `.env`. Both DAGs use this
+explicit connection while selecting their own buckets through DAG parameters.
+
+Each value is an Airflow AWS connection encoded as one line of JSON. The DAGs
+validate their named connection before creating an S3 client, so a missing or
+mistyped connection does not fall back to process-wide `AWS_*` credentials.
+
 - Airflow UI: <http://localhost:8080> — username `admin`, password in `.airflow/simple_auth_manager_passwords.json`
 - S3 GUI: <http://localhost:3000>
 
@@ -61,6 +69,7 @@ Processes a CityGML ZIP from S3 through the full pipeline and uploads results ba
 | `tiles_output_bucket` | S3 bucket for 3D Tiles output |
 | `gml_output_bucket` | Dedicated S3 bucket whose contents are replaced by the CityGML output |
 | `source_crs` | Source CRS (default: UTM zone 32 / GRS80) |
+| `municipality_key` | Municipality key used to restrict enrichment to one city (default: `09362000`, Regensburg) |
 | `age_zones_key` | Optional key of the Baualtersklassen GeoPackage in the input bucket |
 | `geothermal_key` | Optional key of the geothermal GeoPackage in the input bucket |
 | `skip_cleanup` | Keep the complete run workspace after successful uploads for debugging (default: `false`) |
@@ -133,6 +142,10 @@ licenses.
 - Host endpoint: `http://localhost:4566`
 - Default bucket: `external-downloads` (configurable via `S3_BUCKET` in `.env`)
 - S3 GUI: <http://localhost:3000>
+
+For LocalStack, point `AIRFLOW_CONN_DET_RG_S3` at `http://localhost:4566`. The
+supporting containers use the separately scoped `LOCALSTACK_S3_*` variables,
+while the GUI uses `S3_GUI_*`; none of these are used implicitly by the DAGs.
 
 ## Debugging
 

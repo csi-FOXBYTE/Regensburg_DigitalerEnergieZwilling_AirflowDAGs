@@ -6,7 +6,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dags"))
 
-from pipeline import config
+from pipeline import config, s3_connection
 from pipeline.tasks import download
 from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
 from digital_twin_pipeline import dag as digital_twin_dag
@@ -34,7 +34,51 @@ class EnrichmentPipelineTest(unittest.TestCase):
         )
         self.assertEqual(clear_task.downstream_task_ids, {"upload_gml"})
 
-    def test_enrichment_uses_version_0_6_0_and_optional_geopackages(self):
+    def test_digital_twin_s3_tasks_use_the_dag_connection(self):
+        s3_task_ids = {
+            "download_file_task",
+            "download_gpkg_task",
+            "clear_tiles_bucket",
+            "clear_gml_bucket",
+            "upload_tiles",
+            "upload_address_db",
+            "upload_gml",
+        }
+
+        for task_id in s3_task_ids:
+            task = digital_twin_dag.get_task(task_id)
+            self.assertEqual(task.op_kwargs["aws_conn_id"], "det_rg_s3")
+
+    def test_s3_connection_lookup_is_explicit_and_fail_closed(self):
+        connection = mock.Mock(conn_type="aws")
+        hook = mock.Mock()
+        with (
+            mock.patch.object(
+                s3_connection.BaseHook,
+                "get_connection",
+                return_value=connection,
+            ) as get_connection,
+            mock.patch.object(
+                s3_connection,
+                "S3Hook",
+                return_value=hook,
+            ) as s3_hook,
+        ):
+            result = s3_connection.get_s3_hook("det_rg_s3")
+
+        self.assertIs(result, hook)
+        get_connection.assert_called_once_with("det_rg_s3")
+        s3_hook.assert_called_once_with(aws_conn_id="det_rg_s3")
+
+        with mock.patch.object(
+            s3_connection.BaseHook,
+            "get_connection",
+            side_effect=RuntimeError("connection missing"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "connection missing"):
+                s3_connection.get_s3_hook("det_rg_s3")
+
+    def test_enrichment_uses_version_0_7_0_and_pipeline_parameters(self):
         task = make_enrich_cityjson_task(
             "json",
             "enriched_json",
@@ -45,7 +89,12 @@ class EnrichmentPipelineTest(unittest.TestCase):
 
         self.assertRegex(
             config.ENRICH_IMAGE,
-            r":0\.6\.0@sha256:[0-9a-f]{64}$",
+            r":0\.7\.0@sha256:[0-9a-f]{64}$",
+        )
+        self.assertEqual(digital_twin_dag.params.get("municipality_key"), "09362000")
+        self.assertEqual(
+            task.environment["MUNICIPALITY_KEY"],
+            "{{ params.municipality_key }}",
         )
         self.assertEqual(
             task.environment["AGE_ZONES_FILE"],
@@ -72,6 +121,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
                 params,
                 "manual__test",
                 "download_gpkg_task",
+                "det_rg_s3",
             )
 
         self.assertEqual(
@@ -81,11 +131,13 @@ class EnrichmentPipelineTest(unittest.TestCase):
                     "input",
                     "reference/Baualtersklassen.gpkg",
                     "/work/job/gpkg/age_zones.gpkg",
+                    "det_rg_s3",
                 ),
                 mock.call(
                     "input",
                     "reference/Geothermie.gpkg",
                     "/work/job/gpkg/geothermal.gpkg",
+                    "det_rg_s3",
                 ),
             ],
         )
@@ -107,6 +159,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
                 {"bucket": "input"},
                 "manual__test",
                 "download_gpkg_task",
+                "det_rg_s3",
             )
 
         download_from_s3.assert_not_called()

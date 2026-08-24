@@ -11,7 +11,7 @@ from pipeline.tasks.convert_cityjson_to_3dtiles import make_convert_cityjson_to_
 from pipeline.tasks.convert_cityjson_to_citygml import make_convert_cityjson_to_citygml_task
 from pipeline.tasks.upload import make_upload_task, make_clear_bucket_task
 from pipeline.tasks.cleanup import make_cleanup_task
-from pipeline.config import get_job_dir
+from pipeline.config import S3_CONN_ID, get_job_dir
 from pipeline import manifest as mf
 
 DAG_ID = "digital_twin_pipeline"
@@ -69,6 +69,11 @@ with DAG(
             type="string",
             description="Source Coordinate System",
         ),
+        "municipality_key": Param(
+            default="09362000",
+            type="string",
+            description="Municipality key used to restrict the enrichment dataset to one city",
+        ),
         "age_zones_key": Param(
             default=None,
             type=["string", "null"],
@@ -90,8 +95,8 @@ with DAG(
     }),
 ) as dag:
     preparation_task = make_preparation_task(DIRS, DAG_ID, STEP_NAMES)
-    download_task = make_download_task()
-    download_gpkg_task = make_download_gpkg_task()
+    download_task = make_download_task(S3_CONN_ID)
+    download_gpkg_task = make_download_gpkg_task(S3_CONN_ID)
     extract_task = make_extract_zip_task()
     gml_to_json_task = make_convert_citygml_to_cityjson_task("gml_in", "json")
     enrich_task = make_enrich_cityjson_task(
@@ -103,11 +108,21 @@ with DAG(
     )
     json_to_3d_task = make_convert_cityjson_to_3dtiles_task("enriched_json", "3d_tiles")
     json_to_gml_task = make_convert_cityjson_to_citygml_task("enriched_json", "gml_out")
-    clear_tiles_bucket_task = make_clear_bucket_task("clear_tiles_bucket", "tiles_output_bucket")
-    clear_gml_bucket_task = make_clear_bucket_task("clear_gml_bucket", "gml_output_bucket")
-    upload_tiles_task = make_upload_task("upload_tiles", "3d_tiles", "tiles_output_bucket")
-    upload_address_db_task = make_upload_task("upload_address_db", "address_db", "tiles_output_bucket")
-    upload_gml_task = make_upload_task("upload_gml", "gml_out", "gml_output_bucket")
+    clear_tiles_bucket_task = make_clear_bucket_task(
+        "clear_tiles_bucket", "tiles_output_bucket", S3_CONN_ID
+    )
+    clear_gml_bucket_task = make_clear_bucket_task(
+        "clear_gml_bucket", "gml_output_bucket", S3_CONN_ID
+    )
+    upload_tiles_task = make_upload_task(
+        "upload_tiles", "3d_tiles", "tiles_output_bucket", S3_CONN_ID
+    )
+    upload_address_db_task = make_upload_task(
+        "upload_address_db", "address_db", "tiles_output_bucket", S3_CONN_ID
+    )
+    upload_gml_task = make_upload_task(
+        "upload_gml", "gml_out", "gml_output_bucket", S3_CONN_ID
+    )
     cleanup_task = make_cleanup_task(DIRS, honor_skip_cleanup=True)
     finalize_task = PythonOperator(
         task_id="finalize_manifest",

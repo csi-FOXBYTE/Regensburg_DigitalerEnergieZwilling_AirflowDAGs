@@ -5,7 +5,7 @@ from airflow.sdk.definitions.param import ParamsDict
 from airflow.providers.standard.operators.python import PythonOperator
 
 from pipeline import manifest as mf
-from pipeline.config import get_job_dir
+from pipeline.config import S3_CONN_ID, get_job_dir
 from pipeline.tasks.cleanup import make_cleanup_task
 from pipeline.tasks.preparation import make_preparation_task
 from pipeline.tasks.terrain_processing import (
@@ -90,7 +90,7 @@ with DAG(
     generate_terrain_task = make_generate_terrain_task()
     normalize_and_prepare_layer_task = make_normalize_and_prepare_layer_task()
     validate_terrain_task = make_validate_terrain_task()
-    publish_terrain_task = make_publish_terrain_task()
+    publish_terrain_task = make_publish_terrain_task(S3_CONN_ID)
     cleanup_task = make_cleanup_task(DIRS, honor_skip_cleanup=True)
     finalize_task = PythonOperator(
         task_id="finalize_manifest",

@@ -14,8 +14,8 @@ def _normalize_docker_host_path(path: str) -> str:
 
 GML_TOOLS_IMAGE = "ghcr.io/csi-foxbyte/citygml-tools-docker:latest"
 ENRICH_IMAGE = (
-    "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.6.0"
-    "@sha256:3f096eaa88ea9119b98360093bee795ddfe083b77d322064dc7592dfca2b174e"
+    "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.7.0"
+    "@sha256:d42bd14722678060c18235e9979cf47768f163fb90771361981ca87f853eef15"
 )
 JSON_TO_3D_TILES_IMAGE = (
     "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.24"
@@ -35,6 +35,7 @@ DGM1_META4_PATH = os.getenv("DGM1_META4_PATH", str(PROJECT_DIR / "dgm1.meta4"))
 DGM1_DOWNLOAD_WORKERS = int(os.getenv("DGM1_DOWNLOAD_WORKERS", "4"))
 DGM1_CTB_THREADS = int(os.getenv("DGM1_CTB_THREADS", "4"))
 DGM1_UPLOAD_WORKERS = int(os.getenv("DGM1_UPLOAD_WORKERS", "8"))
+S3_CONN_ID = "det_rg_s3"
 
 WORK_DIR = _normalize_docker_host_path(os.getenv(
     "CITYJSON_WORK_DIR",
