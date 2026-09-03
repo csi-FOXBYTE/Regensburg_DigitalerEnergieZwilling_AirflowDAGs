@@ -13,3 +13,4 @@ workdir/
 
 .airflow/
 .airflow-env/
+.sbom-env/

@@ -54,7 +54,7 @@ with DAG(
         ),
         "key": Param(
             type="string",
-            description="Key (path) of the zip file in the bucket — also used as the local filename",
+            description="S3 object key of the zip file in the bucket",
         ),
         "tiles_output_bucket": Param(
             type="string",

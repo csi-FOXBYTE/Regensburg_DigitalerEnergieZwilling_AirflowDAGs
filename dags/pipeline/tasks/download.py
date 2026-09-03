@@ -1,6 +1,6 @@
 import os
 from airflow.providers.standard.operators.python import PythonOperator
-from pipeline.config import get_job_dir
+from pipeline.config import INPUT_ZIP_FILENAME, get_job_dir
 from pipeline import manifest as mf
 from pipeline.s3_connection import get_s3_hook
 
@@ -27,7 +27,7 @@ def _download_callable(params, run_id, task_id, aws_conn_id):
         download_from_s3(
             bucket,
             key,
-            os.path.join(job_dir, "zip", key),
+            os.path.join(job_dir, "zip", INPUT_ZIP_FILENAME),
             aws_conn_id,
         )
         mf.update_step(job_dir, task_id, "success")

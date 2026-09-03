@@ -137,6 +137,25 @@ The Bavarian DGM1 source data is provided under CC BY 4.0. The project remains
 licensed under LGPL-3.0-or-later; GDAL and CTB retain their respective upstream
 licenses.
 
+## Software bill of materials
+
+The checked-in [`SBOM.cdx.json`](SBOM.cdx.json) is a CycloneDX 1.6 inventory;
+[`SBOM.csv`](SBOM.csv) provides the same components in a review-friendly table.
+Generate both files with the Python tooling in an isolated environment:
+
+```bash
+python3 -m venv .sbom-env
+.sbom-env/bin/python -m pip install -r requirements-sbom.txt
+.sbom-env/bin/python scripts/generate_sbom.py
+```
+
+By default the generator inventories the installed `.airflow-env`. Run
+`./init.sh` first, or pass `--python /path/to/python` to inventory another
+equivalent Airflow environment. It also adds the unpinned S3 GUI requirements,
+Python runtimes, and container image references declared in `sbom.config.json`.
+Container contents are not expanded; keep `sbom.config.json` synchronized with
+`dags/pipeline/config.py`, `docker-compose.yaml`, and `s3-gui/Dockerfile`.
+
 ## LocalStack S3
 
 - Host endpoint: `http://localhost:4566`

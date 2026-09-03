@@ -7,7 +7,7 @@ from unittest import mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dags"))
 
 from pipeline import config, s3_connection
-from pipeline.tasks import download
+from pipeline.tasks import download, extract_zip
 from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
 from digital_twin_pipeline import dag as digital_twin_dag
 
@@ -78,7 +78,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "connection missing"):
                 s3_connection.get_s3_hook("det_rg_s3")
 
-    def test_enrichment_uses_version_0_7_0_and_pipeline_parameters(self):
+    def test_enrichment_uses_version_0_8_0_and_pipeline_parameters(self):
         task = make_enrich_cityjson_task(
             "json",
             "enriched_json",
@@ -89,7 +89,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
 
         self.assertRegex(
             config.ENRICH_IMAGE,
-            r":0\.7\.0@sha256:[0-9a-f]{64}$",
+            r":0\.8\.0@sha256:[0-9a-f]{64}$",
         )
         self.assertEqual(digital_twin_dag.params.get("municipality_key"), "09362000")
         self.assertEqual(
@@ -147,6 +147,45 @@ class EnrichmentPipelineTest(unittest.TestCase):
                 mock.call("/work/job", "download_gpkg_task", "running"),
                 mock.call("/work/job", "download_gpkg_task", "success"),
             ],
+        )
+
+    def test_main_download_does_not_use_s3_key_as_local_path(self):
+        with (
+            mock.patch.object(download, "get_job_dir", return_value="/work/job"),
+            mock.patch.object(download, "download_from_s3") as download_from_s3,
+            mock.patch.object(download.mf, "update_step"),
+        ):
+            download._download_callable(
+                {"bucket": "input", "key": "../../outside.zip"},
+                "manual__test",
+                "download_file_task",
+                "det_rg_s3",
+            )
+
+        download_from_s3.assert_called_once_with(
+            "input",
+            "../../outside.zip",
+            "/work/job/zip/input.zip",
+            "det_rg_s3",
+        )
+
+    def test_extraction_does_not_use_s3_key_as_local_path(self):
+        with (
+            mock.patch.object(extract_zip, "get_job_dir", return_value="/work/job"),
+            mock.patch.object(extract_zip.os.path, "isfile", return_value=True) as isfile,
+            mock.patch.object(extract_zip.zipfile, "ZipFile") as zip_file,
+            mock.patch.object(extract_zip.mf, "update_step"),
+        ):
+            extract_zip._extract_zip_callable(
+                {"key": "../../outside.zip"},
+                "manual__test",
+                "extract_zip",
+            )
+
+        isfile.assert_called_once_with("/work/job/zip/input.zip")
+        zip_file.assert_called_once_with("/work/job/zip/input.zip", "r")
+        zip_file.return_value.__enter__.return_value.extractall.assert_called_once_with(
+            "/work/job/gml_in"
         )
 
     def test_download_gpkg_is_skipped_without_optional_keys(self):

@@ -1,0 +1,245 @@
+{
+  "rootComponent": {
+    "type": "application",
+    "bom-ref": "pkg:generic/Regensburg_DigitalerEnergieZwilling_AirflowDAGs@unversioned",
+    "name": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs",
+    "version": "unversioned",
+    "description": "Apache Airflow DAGs and supporting services for the Regensburg digital energy twin pipelines.",
+    "licenses": [
+      {
+        "license": {
+          "id": "LGPL-3.0-or-later"
+        }
+      }
+    ],
+    "purl": "pkg:generic/Regensburg_DigitalerEnergieZwilling_AirflowDAGs@unversioned"
+  },
+  "directPythonDependencies": [
+    {
+      "name": "apache-airflow",
+      "metadataSource": "init.sh"
+    },
+    {
+      "name": "apache-airflow-providers-amazon",
+      "metadataSource": "init.sh (apache-airflow amazon extra)"
+    },
+    {
+      "name": "apache-airflow-providers-docker",
+      "metadataSource": "init.sh (apache-airflow docker extra)"
+    },
+    {
+      "name": "apache-airflow-providers-standard",
+      "metadataSource": "DAG imports and installed Airflow environment"
+    },
+    {
+      "name": "python-dotenv",
+      "metadataSource": "requirements.txt"
+    }
+  ],
+  "additionalComponents": [
+    {
+      "type": "application",
+      "bom-ref": "component:python-runtime@3.12",
+      "name": "Python",
+      "version": "3.12",
+      "scope": "required",
+      "ecosystem": "Python runtime",
+      "relationship": "referenced host runtime software",
+      "metadataSource": "init.sh",
+      "notes": "Python minor version required by the Airflow host environment; the exact patch version is supplied by the host and is not pinned.",
+      "licenses": [
+        {
+          "license": {
+            "id": "PSF-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "requirement:pypi:Flask@%3E%3D3%2C%3C4",
+      "name": "Flask",
+      "version": ">=3,<4 (not pinned)",
+      "scope": "required",
+      "ecosystem": "PyPI requirement",
+      "relationship": "declared S3 GUI runtime dependency",
+      "metadataSource": "s3-gui/requirements.txt",
+      "notes": "Version range installed independently while building the S3 GUI image; transitive packages are not resolved by this source SBOM.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "requirement:pypi:boto3@%3E%3D1.34%2C%3C2",
+      "name": "boto3",
+      "version": ">=1.34,<2 (not pinned)",
+      "scope": "required",
+      "ecosystem": "PyPI requirement",
+      "relationship": "declared S3 GUI runtime dependency",
+      "metadataSource": "s3-gui/requirements.txt",
+      "notes": "Version range installed independently while building the S3 GUI image; transitive packages are not resolved by this source SBOM.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:python:3.12-slim",
+      "name": "python",
+      "version": "3.12-slim (not digest pinned)",
+      "scope": "required",
+      "ecosystem": "OCI container",
+      "relationship": "referenced S3 GUI build/runtime software",
+      "metadataSource": "s3-gui/Dockerfile",
+      "notes": "S3 GUI base image; packages inside the image are not expanded.",
+      "licenses": [
+        {
+          "license": {
+            "name": "PSF-2.0; container includes additional licenses"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/docker-library/python"
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/citygml-tools-docker:latest",
+      "name": "ghcr.io/csi-foxbyte/citygml-tools-docker",
+      "version": "latest (not digest pinned)",
+      "scope": "required",
+      "ecosystem": "OCI container",
+      "relationship": "referenced pipeline runtime software",
+      "metadataSource": "dags/pipeline/config.py",
+      "notes": "CityGML conversion image; packages inside the image are not expanded.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.8.0@sha256:b2faf575e02f071e43a44189c187df0e6aa0bb1779a2e48297e1eb41e9ec483a",
+      "name": "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment",
+      "version": "0.8.0@sha256:b2faf575e02f071e43a44189c187df0e6aa0bb1779a2e48297e1eb41e9ec483a",
+      "scope": "required",
+      "ecosystem": "OCI container",
+      "relationship": "referenced pipeline runtime software",
+      "metadataSource": "dags/pipeline/config.py",
+      "notes": "Offline enrichment image; packages inside the image are documented by that repository's own SBOM and are not expanded here.",
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.24@sha256:39ab45799580d32d73ff58bc421df585b77e3b8fd5ec8e9dd8a9cf940b68e038",
+      "name": "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles",
+      "version": "0.0.24@sha256:39ab45799580d32d73ff58bc421df585b77e3b8fd5ec8e9dd8a9cf940b68e038",
+      "scope": "required",
+      "ecosystem": "OCI container",
+      "relationship": "referenced pipeline runtime software",
+      "metadataSource": "dags/pipeline/config.py",
+      "notes": "CityJSON to 3D Tiles image; packages inside the image are not expanded.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:ghcr.io/osgeo/gdal:alpine-small-3.13.2@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e",
+      "name": "ghcr.io/osgeo/gdal",
+      "version": "alpine-small-3.13.2@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e",
+      "scope": "required",
+      "ecosystem": "OCI container",
+      "relationship": "referenced pipeline runtime software",
+      "metadataSource": "dags/pipeline/config.py",
+      "notes": "GDAL terrain-processing image; packages inside the image are not expanded.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:ghcr.io/tum-gis/ctb-quantized-mesh:latest@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98",
+      "name": "ghcr.io/tum-gis/ctb-quantized-mesh",
+      "version": "latest@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98",
+      "scope": "required",
+      "ecosystem": "OCI container",
+      "relationship": "referenced pipeline runtime software",
+      "metadataSource": "dags/pipeline/config.py",
+      "notes": "Quantized Mesh terrain image pinned by digest; packages inside the image are not expanded.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:localstack/localstack:latest",
+      "name": "localstack/localstack",
+      "version": "latest (not digest pinned)",
+      "scope": "optional",
+      "ecosystem": "OCI container",
+      "relationship": "referenced local development software",
+      "metadataSource": "docker-compose.yaml",
+      "notes": "Optional local S3 service image; packages inside the image are not expanded.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    },
+    {
+      "type": "container",
+      "bom-ref": "oci:amazon/aws-cli:latest",
+      "name": "amazon/aws-cli",
+      "version": "latest (not digest pinned)",
+      "scope": "optional",
+      "ecosystem": "OCI container",
+      "relationship": "referenced local development software",
+      "metadataSource": "docker-compose.yaml",
+      "notes": "Optional local S3 initialization image; packages inside the image are not expanded.",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ]
+    }
+  ]
+}
