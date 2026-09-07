@@ -1282,7 +1282,7 @@
         },
         {
           "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/init.sh"
+          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/dags/digital_twin_pipeline.py and dags/dgm1_terrain_pipeline.py"
         },
         {
           "name": "sbom:notes",
@@ -1489,7 +1489,7 @@
         },
         {
           "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/init.sh (apache-airflow amazon extra)"
+          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/dags/pipeline/s3_connection.py"
         },
         {
           "name": "sbom:notes",
@@ -1800,7 +1800,7 @@
         },
         {
           "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/init.sh (apache-airflow docker extra)"
+          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/dags/pipeline/operators/job_docker_operator.py"
         },
         {
           "name": "sbom:notes",
@@ -2025,7 +2025,7 @@
         },
         {
           "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/DAG imports and installed Airflow environment"
+          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/DAG and pipeline task imports"
         },
         {
           "name": "sbom:notes",
@@ -3263,11 +3263,11 @@
         },
         {
           "name": "sbom:relationship",
-          "value": "transitive runtime dependency"
+          "value": "direct runtime dependency"
         },
         {
           "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/.airflow-env installed package metadata"
+          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/dags/pipeline/operators/job_docker_operator.py"
         },
         {
           "name": "sbom:notes",
@@ -6485,11 +6485,11 @@
         },
         {
           "name": "sbom:relationship",
-          "value": "direct runtime dependency"
+          "value": "transitive runtime dependency"
         },
         {
           "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/requirements.txt"
+          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/.airflow-env installed package metadata"
         },
         {
           "name": "sbom:notes",
@@ -9051,156 +9051,6 @@
       ]
     },
     {
-      "type": "application",
-      "bom-ref": "component:python-runtime@3.12",
-      "name": "Python",
-      "version": "3.12",
-      "scope": "required",
-      "licenses": [
-        {
-          "license": {
-            "id": "PSF-2.0"
-          }
-        }
-      ],
-      "properties": [
-        {
-          "name": "sbom:repository",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs"
-        },
-        {
-          "name": "sbom:ecosystem",
-          "value": "Python runtime"
-        },
-        {
-          "name": "sbom:relationship",
-          "value": "referenced host runtime software"
-        },
-        {
-          "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/init.sh"
-        },
-        {
-          "name": "sbom:notes",
-          "value": "Python minor version required by the Airflow host environment; the exact patch version is supplied by the host and is not pinned."
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bom-ref": "requirement:pypi:Flask@%3E%3D3%2C%3C4",
-      "name": "Flask",
-      "version": ">=3,<4 (not pinned)",
-      "scope": "required",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
-      "properties": [
-        {
-          "name": "sbom:repository",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs"
-        },
-        {
-          "name": "sbom:ecosystem",
-          "value": "PyPI requirement"
-        },
-        {
-          "name": "sbom:relationship",
-          "value": "declared S3 GUI runtime dependency"
-        },
-        {
-          "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/s3-gui/requirements.txt"
-        },
-        {
-          "name": "sbom:notes",
-          "value": "Version range installed independently while building the S3 GUI image; transitive packages are not resolved by this source SBOM."
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bom-ref": "requirement:pypi:boto3@%3E%3D1.34%2C%3C2",
-      "name": "boto3",
-      "version": ">=1.34,<2 (not pinned)",
-      "scope": "required",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
-      "properties": [
-        {
-          "name": "sbom:repository",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs"
-        },
-        {
-          "name": "sbom:ecosystem",
-          "value": "PyPI requirement"
-        },
-        {
-          "name": "sbom:relationship",
-          "value": "declared S3 GUI runtime dependency"
-        },
-        {
-          "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/s3-gui/requirements.txt"
-        },
-        {
-          "name": "sbom:notes",
-          "value": "Version range installed independently while building the S3 GUI image; transitive packages are not resolved by this source SBOM."
-        }
-      ]
-    },
-    {
-      "type": "container",
-      "bom-ref": "oci:python:3.12-slim",
-      "name": "python",
-      "version": "3.12-slim (not digest pinned)",
-      "scope": "required",
-      "licenses": [
-        {
-          "license": {
-            "name": "PSF-2.0; container includes additional licenses"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://github.com/docker-library/python"
-        }
-      ],
-      "properties": [
-        {
-          "name": "sbom:repository",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs"
-        },
-        {
-          "name": "sbom:ecosystem",
-          "value": "OCI container"
-        },
-        {
-          "name": "sbom:relationship",
-          "value": "referenced S3 GUI build/runtime software"
-        },
-        {
-          "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/s3-gui/Dockerfile"
-        },
-        {
-          "name": "sbom:notes",
-          "value": "S3 GUI base image; packages inside the image are not expanded."
-        }
-      ]
-    },
-    {
       "type": "container",
       "bom-ref": "oci:ghcr.io/csi-foxbyte/citygml-tools-docker:latest",
       "name": "ghcr.io/csi-foxbyte/citygml-tools-docker",
@@ -9379,78 +9229,6 @@
           "value": "Quantized Mesh terrain image pinned by digest; packages inside the image are not expanded."
         }
       ]
-    },
-    {
-      "type": "container",
-      "bom-ref": "oci:localstack/localstack:latest",
-      "name": "localstack/localstack",
-      "version": "latest (not digest pinned)",
-      "scope": "optional",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
-      "properties": [
-        {
-          "name": "sbom:repository",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs"
-        },
-        {
-          "name": "sbom:ecosystem",
-          "value": "OCI container"
-        },
-        {
-          "name": "sbom:relationship",
-          "value": "referenced local development software"
-        },
-        {
-          "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/docker-compose.yaml"
-        },
-        {
-          "name": "sbom:notes",
-          "value": "Optional local S3 service image; packages inside the image are not expanded."
-        }
-      ]
-    },
-    {
-      "type": "container",
-      "bom-ref": "oci:amazon/aws-cli:latest",
-      "name": "amazon/aws-cli",
-      "version": "latest (not digest pinned)",
-      "scope": "optional",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
-      "properties": [
-        {
-          "name": "sbom:repository",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs"
-        },
-        {
-          "name": "sbom:ecosystem",
-          "value": "OCI container"
-        },
-        {
-          "name": "sbom:relationship",
-          "value": "referenced local development software"
-        },
-        {
-          "name": "sbom:metadata-source",
-          "value": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs/docker-compose.yaml"
-        },
-        {
-          "name": "sbom:notes",
-          "value": "Optional local S3 initialization image; packages inside the image are not expanded."
-        }
-      ]
     }
   ],
   "dependencies": [
@@ -9461,18 +9239,12 @@
         "apache-airflow-providers-docker==4.5.2",
         "apache-airflow-providers-standard==1.11.0",
         "apache-airflow==3.1.7",
-        "component:python-runtime@3.12",
-        "oci:amazon/aws-cli:latest",
+        "docker==7.1.0",
         "oci:ghcr.io/csi-foxbyte/citygml-tools-docker:latest",
         "oci:ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.24@sha256:39ab45799580d32d73ff58bc421df585b77e3b8fd5ec8e9dd8a9cf940b68e038",
         "oci:ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.8.0@sha256:b2faf575e02f071e43a44189c187df0e6aa0bb1779a2e48297e1eb41e9ec483a",
         "oci:ghcr.io/osgeo/gdal:alpine-small-3.13.2@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e",
-        "oci:ghcr.io/tum-gis/ctb-quantized-mesh:latest@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98",
-        "oci:localstack/localstack:latest",
-        "oci:python:3.12-slim",
-        "python-dotenv==1.2.1",
-        "requirement:pypi:Flask@%3E%3D3%2C%3C4",
-        "requirement:pypi:boto3@%3E%3D1.34%2C%3C2"
+        "oci:ghcr.io/tum-gis/ctb-quantized-mesh:latest@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98"
       ]
     },
     {
@@ -9497,7 +9269,8 @@
       "ref": "Mako==1.3.10"
     },
     {
-      "ref": "MarkupSafe==3.0.3"
+      "ref": "MarkupSafe==3.0.3",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9517,10 +9290,12 @@
       "ref": "PyJWT==2.11.0"
     },
     {
-      "ref": "PyYAML==6.0.3"
+      "ref": "PyYAML==6.0.3",
+      "dependsOn": []
     },
     {
-      "ref": "Pygments==2.19.2"
+      "ref": "Pygments==2.19.2",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9557,7 +9332,8 @@
       "ref": "a2wsgi==1.10.10"
     },
     {
-      "ref": "aiohappyeyeballs==2.6.1"
+      "ref": "aiohappyeyeballs==2.6.1",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9806,7 +9582,8 @@
       "ref": "apache-airflow==3.1.7"
     },
     {
-      "ref": "argcomplete==3.6.3"
+      "ref": "argcomplete==3.6.3",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9815,10 +9592,12 @@
       "ref": "asgiref==3.11.0"
     },
     {
-      "ref": "asn1crypto==1.5.1"
+      "ref": "asn1crypto==1.5.1",
+      "dependsOn": []
     },
     {
-      "ref": "attrs==25.4.0"
+      "ref": "attrs==25.4.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9867,7 +9646,8 @@
       "ref": "cadwyn==5.4.6"
     },
     {
-      "ref": "certifi==2026.1.4"
+      "ref": "certifi==2026.1.4",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9876,13 +9656,16 @@
       "ref": "cffi==2.0.0"
     },
     {
-      "ref": "charset-normalizer==3.4.4"
+      "ref": "charset-normalizer==3.4.4",
+      "dependsOn": []
     },
     {
-      "ref": "click==8.3.1"
+      "ref": "click==8.3.1",
+      "dependsOn": []
     },
     {
-      "ref": "colorlog==6.10.1"
+      "ref": "colorlog==6.10.1",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9906,7 +9689,8 @@
       "ref": "cryptography==42.0.8"
     },
     {
-      "ref": "dill==0.4.1"
+      "ref": "dill==0.4.1",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9956,7 +9740,8 @@
       "ref": "fastapi==0.117.1"
     },
     {
-      "ref": "frozenlist==1.8.0"
+      "ref": "frozenlist==1.8.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -9991,10 +9776,12 @@
       "ref": "greenlet==3.3.1"
     },
     {
-      "ref": "grpcio==1.65.5"
+      "ref": "grpcio==1.65.5",
+      "dependsOn": []
     },
     {
-      "ref": "h11==0.16.0"
+      "ref": "h11==0.16.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10005,7 +9792,8 @@
       "ref": "httpcore==1.0.9"
     },
     {
-      "ref": "httptools==0.7.1"
+      "ref": "httptools==0.7.1",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10020,7 +9808,8 @@
       "ref": "httpx==0.28.1"
     },
     {
-      "ref": "idna==3.11"
+      "ref": "idna==3.11",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10031,13 +9820,16 @@
       "ref": "importlib_metadata==8.4.0"
     },
     {
-      "ref": "inflection==0.5.1"
+      "ref": "inflection==0.5.1",
+      "dependsOn": []
     },
     {
-      "ref": "itsdangerous==2.2.0"
+      "ref": "itsdangerous==2.2.0",
+      "dependsOn": []
     },
     {
-      "ref": "jmespath==0.10.0"
+      "ref": "jmespath==0.10.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10062,7 +9854,8 @@
       "ref": "jsonschema==4.26.0"
     },
     {
-      "ref": "lazy-object-proxy==1.12.0"
+      "ref": "lazy-object-proxy==1.12.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10078,7 +9871,8 @@
       "ref": "linkify-it-py==2.0.3"
     },
     {
-      "ref": "lockfile==0.12.2"
+      "ref": "lockfile==0.12.2",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10103,7 +9897,8 @@
       "ref": "marshmallow==3.26.2"
     },
     {
-      "ref": "mdurl==0.1.2"
+      "ref": "mdurl==0.1.2",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10112,7 +9907,8 @@
       "ref": "methodtools==0.4.7"
     },
     {
-      "ref": "more-itertools==10.8.0"
+      "ref": "more-itertools==10.8.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10127,7 +9923,8 @@
       "ref": "multidict==6.7.1"
     },
     {
-      "ref": "natsort==8.4.0"
+      "ref": "natsort==8.4.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10201,7 +9998,8 @@
       "ref": "outcome==1.3.0.post0"
     },
     {
-      "ref": "packaging==26.0"
+      "ref": "packaging==26.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10217,19 +10015,24 @@
       "ref": "pendulum==3.2.0"
     },
     {
-      "ref": "pip==26.0.1"
+      "ref": "pip==26.0.1",
+      "dependsOn": []
     },
     {
-      "ref": "pluggy==1.6.0"
+      "ref": "pluggy==1.6.0",
+      "dependsOn": []
     },
     {
-      "ref": "ply==3.11"
+      "ref": "ply==3.11",
+      "dependsOn": []
     },
     {
-      "ref": "propcache==0.4.1"
+      "ref": "propcache==0.4.1",
+      "dependsOn": []
     },
     {
-      "ref": "protobuf==4.25.8"
+      "ref": "protobuf==4.25.8",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10240,7 +10043,8 @@
       "ref": "psutil==7.2.2"
     },
     {
-      "ref": "pycparser==3.0"
+      "ref": "pycparser==3.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10260,7 +10064,8 @@
       "ref": "pydantic_core==2.41.5"
     },
     {
-      "ref": "pygtrie==2.5.0"
+      "ref": "pygtrie==2.5.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10281,7 +10086,8 @@
       "ref": "python-dotenv==1.2.1"
     },
     {
-      "ref": "python-multipart==0.0.22"
+      "ref": "python-multipart==0.0.22",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10290,7 +10096,8 @@
       "ref": "python-slugify==8.0.4"
     },
     {
-      "ref": "pytz==2025.2"
+      "ref": "pytz==2025.2",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10352,7 +10159,8 @@
       "ref": "rich==13.9.4"
     },
     {
-      "ref": "rpds-py==0.30.0"
+      "ref": "rpds-py==0.30.0",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10380,7 +10188,8 @@
       "ref": "scramp==1.4.8"
     },
     {
-      "ref": "setproctitle==1.3.7"
+      "ref": "setproctitle==1.3.7",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10392,19 +10201,24 @@
       "ref": "setuptools==80.10.2"
     },
     {
-      "ref": "shellingham==1.5.4"
+      "ref": "shellingham==1.5.4",
+      "dependsOn": []
     },
     {
-      "ref": "six==1.17.0"
+      "ref": "six==1.17.0",
+      "dependsOn": []
     },
     {
-      "ref": "sniffio==1.3.1"
+      "ref": "sniffio==1.3.1",
+      "dependsOn": []
     },
     {
-      "ref": "soupsieve==2.8.3"
+      "ref": "soupsieve==2.8.3",
+      "dependsOn": []
     },
     {
-      "ref": "sqlparse==0.5.5"
+      "ref": "sqlparse==0.5.5",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10436,16 +10250,20 @@
       "ref": "svcs==25.1.0"
     },
     {
-      "ref": "tabulate==0.9.0"
+      "ref": "tabulate==0.9.0",
+      "dependsOn": []
     },
     {
-      "ref": "tenacity==9.1.2"
+      "ref": "tenacity==9.1.2",
+      "dependsOn": []
     },
     {
-      "ref": "termcolor==3.3.0"
+      "ref": "termcolor==3.3.0",
+      "dependsOn": []
     },
     {
-      "ref": "text-unidecode==1.3"
+      "ref": "text-unidecode==1.3",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10463,13 +10281,16 @@
       "ref": "typing-inspection==0.4.2"
     },
     {
-      "ref": "typing_extensions==4.15.0"
+      "ref": "typing_extensions==4.15.0",
+      "dependsOn": []
     },
     {
-      "ref": "tzdata==2025.3"
+      "ref": "tzdata==2025.3",
+      "dependsOn": []
     },
     {
-      "ref": "uc-micro-py==1.0.3"
+      "ref": "uc-micro-py==1.0.3",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10483,10 +10304,12 @@
       "ref": "universal_pathlib==0.2.6"
     },
     {
-      "ref": "urllib3==2.6.3"
+      "ref": "urllib3==2.6.3",
+      "dependsOn": []
     },
     {
-      "ref": "uuid6==2025.0.1"
+      "ref": "uuid6==2025.0.1",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10524,7 +10347,8 @@
       "ref": "watchtower==3.4.0"
     },
     {
-      "ref": "websockets==15.0.1"
+      "ref": "websockets==15.0.1",
+      "dependsOn": []
     },
     {
       "dependsOn": [
@@ -10554,7 +10378,7 @@
     }
   ],
   "metadata": {
-    "timestamp": "2026-09-03T06:46:36.022445+00:00",
+    "timestamp": "2026-09-04T14:13:20.512173+00:00",
     "tools": {
       "components": [
         {
@@ -10667,7 +10491,7 @@
       "bom-ref": "pkg:generic/Regensburg_DigitalerEnergieZwilling_AirflowDAGs@unversioned",
       "name": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs",
       "version": "unversioned",
-      "description": "Apache Airflow DAGs and supporting services for the Regensburg digital energy twin pipelines.",
+      "description": "Two Apache Airflow DAGs for the Regensburg digital energy twin pipelines.",
       "licenses": [
         {
           "license": {
@@ -10699,7 +10523,7 @@
         },
         {
           "name": "vcs:commit",
-          "value": "f40a77e8af90054b73b0fab8de4a4e6233087632"
+          "value": "fabbe148ccbc155b59b63b52e666f6d876af9e18"
         },
         {
           "name": "sbom:source-state",
@@ -10710,7 +10534,7 @@
     "properties": [
       {
         "name": "sbom:scope",
-        "value": "This repository's first-party application, installed Airflow Python environment, declared S3 GUI requirements, Python runtimes, and referenced container images"
+        "value": "This repository's two Airflow DAGs, their reachable Python package dependencies, and the container images executed by those DAGs"
       },
       {
         "name": "sbom:container-detail",
@@ -10726,7 +10550,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:c6508811-19bd-40cf-85db-b331e9c18052",
+  "serialNumber": "urn:uuid:35631583-f989-4d04-b539-9bc980b95021",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",

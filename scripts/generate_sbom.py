@@ -33,7 +33,7 @@ def parse_args() -> argparse.Namespace:
         "--python",
         type=Path,
         default=REPOSITORY_DIR / ".airflow-env" / "bin" / "python",
-        help="Python interpreter whose installed environment should be inventoried",
+        help="Python interpreter whose installed package metadata should be used",
     )
     return parser.parse_args()
 
@@ -165,6 +165,29 @@ def add_repository_metadata(bom: dict[str, Any], config: dict[str, Any]) -> None
     runtime_refs = dependency_closure(direct_refs, dependency_map)
     repository = root["name"]
 
+    # cyclonedx-py inventories every installed distribution in the selected
+    # environment. Keep only the dependency graph reachable from packages used
+    # by the DAGs so unrelated Airflow development-environment packages do not
+    # leak into this repository-scoped SBOM.
+    bom["components"] = [
+        component
+        for component in components
+        if component["bom-ref"] in runtime_refs
+    ]
+    bom["dependencies"] = [
+        {
+            **entry,
+            "dependsOn": [
+                dependency
+                for dependency in entry.get("dependsOn", [])
+                if dependency in runtime_refs
+            ],
+        }
+        for entry in bom["dependencies"]
+        if entry["ref"] in runtime_refs
+    ]
+    components = bom["components"]
+
     set_property(root, "sbom:repository", repository)
     set_property(root, "sbom:ecosystem", "first-party")
     set_property(root, "sbom:relationship", "root component")
@@ -191,8 +214,9 @@ def add_repository_metadata(bom: dict[str, Any], config: dict[str, Any]) -> None
             relationship = "transitive runtime dependency"
             metadata_source = f"{repository}/.airflow-env installed package metadata"
         else:
-            relationship = "installed environment dependency (reachability unresolved)"
-            metadata_source = f"{repository}/.airflow-env installed package metadata"
+            raise ValueError(
+                f"Component {component['name']} is outside the DAG dependency closure"
+            )
 
         set_property(component, "sbom:repository", repository)
         set_property(component, "sbom:ecosystem", "PyPI")
@@ -275,9 +299,8 @@ def add_generation_metadata(bom: dict[str, Any]) -> None:
         {
             "name": "sbom:scope",
             "value": (
-                "This repository's first-party application, installed Airflow Python "
-                "environment, declared S3 GUI requirements, Python runtimes, and "
-                "referenced container images"
+                "This repository's two Airflow DAGs, their reachable Python package "
+                "dependencies, and the container images executed by those DAGs"
             ),
         },
         {
@@ -367,7 +390,8 @@ def create_csv(bom: dict[str, Any]) -> None:
         return component_rank, component.get("name", "").lower()
 
     with CSV_TEMPORARY_PATH.open("w", encoding="utf-8", newline="") as output:
-        writer = csv.writer(output)
+        # Preserve the checked-in CSV's RFC 4180 line endings.
+        writer = csv.writer(output, lineterminator="\r\n")
         writer.writerow(
             [
                 "Repository",

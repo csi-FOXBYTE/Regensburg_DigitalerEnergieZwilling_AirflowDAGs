@@ -149,12 +149,13 @@ python3 -m venv .sbom-env
 .sbom-env/bin/python scripts/generate_sbom.py
 ```
 
-By default the generator inventories the installed `.airflow-env`. Run
-`./init.sh` first, or pass `--python /path/to/python` to inventory another
-equivalent Airflow environment. It also adds the unpinned S3 GUI requirements,
-Python runtimes, and container image references declared in `sbom.config.json`.
+By default the generator reads package metadata from the installed `.airflow-env`.
+Run `./init.sh` first, or pass `--python /path/to/python` to use another equivalent
+Airflow environment. Only the dependency closure of the packages imported by the
+two DAGs is retained; local development services and the S3 GUI are excluded. The
+generator also adds the pipeline container images declared in `sbom.config.json`.
 Container contents are not expanded; keep `sbom.config.json` synchronized with
-`dags/pipeline/config.py`, `docker-compose.yaml`, and `s3-gui/Dockerfile`.
+`dags/pipeline/config.py`.
 
 ## LocalStack S3
 
