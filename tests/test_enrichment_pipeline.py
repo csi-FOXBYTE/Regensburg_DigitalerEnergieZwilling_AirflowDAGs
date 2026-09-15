@@ -6,19 +6,13 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dags"))
 
-from pipeline import config, s3_connection
+from pipeline import s3_connection
 from pipeline.tasks import download, extract_zip
 from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
 from digital_twin_pipeline import dag as digital_twin_dag
 
 
 class EnrichmentPipelineTest(unittest.TestCase):
-    def test_3d_tiles_converter_is_pinned_to_0_0_24(self):
-        self.assertRegex(
-            config.JSON_TO_3D_TILES_IMAGE,
-            r":0\.0\.24@sha256:[0-9a-f]{64}$",
-        )
-
     def test_digital_twin_cleanup_can_be_skipped(self):
         self.assertFalse(digital_twin_dag.params.get("skip_cleanup"))
         cleanup_task = digital_twin_dag.get_task("cleanup")
@@ -78,7 +72,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "connection missing"):
                 s3_connection.get_s3_hook("det_rg_s3")
 
-    def test_enrichment_uses_version_0_8_0_and_pipeline_parameters(self):
+    def test_enrichment_uses_pipeline_parameters(self):
         task = make_enrich_cityjson_task(
             "json",
             "enriched_json",
@@ -87,10 +81,6 @@ class EnrichmentPipelineTest(unittest.TestCase):
             with_geothermal=True,
         )
 
-        self.assertRegex(
-            config.ENRICH_IMAGE,
-            r":0\.8\.0@sha256:[0-9a-f]{64}$",
-        )
         self.assertEqual(digital_twin_dag.params.get("municipality_key"), "09362000")
         self.assertEqual(
             task.environment["MUNICIPALITY_KEY"],

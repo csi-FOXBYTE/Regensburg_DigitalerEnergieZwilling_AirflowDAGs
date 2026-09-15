@@ -50,7 +50,7 @@ services:
         }
         EOF
 
-        for bucket in det-rg-upload det-rg-gml det-rg-json det-rg-main; do
+        for bucket in det-rg-upload det-rg-gml det-rg-json det-rg-main det-rg-terrain; do
           if aws --endpoint-url "$$endpoint" s3api head-bucket --bucket "$$bucket" >/dev/null 2>&1; then
             echo "Bucket already exists: $$bucket"
           else
@@ -79,7 +79,7 @@ services:
     environment:
       S3_ACCESS_KEY_ID: "${S3_GUI_ACCESS_KEY_ID}"
       S3_SECRET_ACCESS_KEY: "${S3_GUI_SECRET_ACCESS_KEY}"
-      S3_BUCKET_NAMES: "${S3_BUCKET_NAMES:-det-rg-upload,det-rg-gml,det-rg-json,det-rg-main}"
+      S3_BUCKET_NAMES: "${S3_BUCKET_NAMES:-det-rg-upload,det-rg-gml,det-rg-json,det-rg-main,det-rg-terrain}"
       S3_REGION: "${S3_GUI_REGION:-eu-central-1}"
       S3_ENDPOINT_URL: "${S3_GUI_ENDPOINT}"
       S3_FORCE_PATH_STYLE: "true"

@@ -1,0 +1,6 @@
+# Install into an existing Airflow 3 environment using its matching constraints.
+# Airflow itself and the Git bundle provider are deployment prerequisites.
+apache-airflow-providers-amazon
+apache-airflow-providers-docker
+apache-airflow-providers-standard
+docker

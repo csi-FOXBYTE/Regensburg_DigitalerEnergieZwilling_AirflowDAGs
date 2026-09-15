@@ -7,7 +7,9 @@ from typing import Any
 
 import boto3
 from botocore.config import Config
-from flask import Flask, redirect, render_template_string, request, url_for
+from flask import Flask, abort, jsonify, redirect, render_template_string, request, send_file, url_for
+
+from bucket_exports import BucketExports, ExportBusyError
 
 
 S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "http://localstack:4566")
@@ -68,6 +70,12 @@ def _list_objects_page(
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 * 1024
+exports = BucketExports(lambda: _build_s3_client())
+
+
+@app.before_request
+def cleanup_exports():
+    exports.cleanup_expired()
 
 
 TEMPLATE = """<!doctype html>
@@ -112,6 +120,15 @@ TEMPLATE = """<!doctype html>
   {% if error %}
     <div class="err">{{ error }}</div>
   {% endif %}
+
+  <div class="card">
+    <h2>Download <code>{{ bucket }}</code></h2>
+    <p>Prepare the whole bucket as a ZIP, including all folders and listing pages.
+       Preparation continues if you close this tab. Keep the S3 helper running.</p>
+    <button id="prepare-export" type="button">Prepare bucket ZIP</button>
+    <p id="export-status" role="status" aria-live="polite"></p>
+    <a id="export-download" hidden>Download bucket ZIP</a>
+  </div>
 
   <div class="card">
     <h2>Upload to <code>{{ bucket }}</code></h2>
@@ -193,6 +210,66 @@ TEMPLATE = """<!doctype html>
       <div>No objects found.</div>
     {% endif %}
   </div>
+<script>
+  const prepareButton = document.getElementById('prepare-export');
+  const exportStatus = document.getElementById('export-status');
+  const downloadLink = document.getElementById('export-download');
+  let pollTimer;
+
+  function showExport(job) {
+    downloadLink.hidden = job.status !== 'ready';
+    prepareButton.disabled = job.status === 'preparing';
+    if (job.status === 'ready') {
+      downloadLink.href = job.download_url;
+      exportStatus.textContent = `ZIP ready: ${job.objects} objects. Downloads can be resumed; the ZIP is retained for 24 hours after the last download request.`;
+    } else if (job.status === 'failed') {
+      exportStatus.textContent = `Export failed: ${job.error}`;
+    } else {
+      exportStatus.textContent = `Preparing ZIP: ${job.objects} objects completed, ${(job.bytes / 1024 / 1024).toFixed(1)} MiB transferred. You can leave this page and return later.`;
+      pollTimer = setTimeout(() => pollExport(job.status_url), 2000);
+    }
+  }
+
+  async function pollExport(statusUrl) {
+    try {
+      const response = await fetch(statusUrl, {cache: 'no-store', signal: AbortSignal.timeout(15000)});
+      if (response.status === 404) {
+        exportStatus.textContent = 'This export has expired or the helper restarted. Prepare a new ZIP.';
+        prepareButton.disabled = false;
+        return;
+      }
+      if (!response.ok) throw new Error('Could not check export progress.');
+      showExport(await response.json());
+    } catch (error) {
+      exportStatus.textContent = 'Connection interrupted. Retrying the progress check; preparation continues in the helper.';
+      pollTimer = setTimeout(() => pollExport(statusUrl), 5000);
+    }
+  }
+
+  prepareButton.addEventListener('click', async () => {
+    clearTimeout(pollTimer);
+    prepareButton.disabled = true;
+    downloadLink.hidden = true;
+    exportStatus.textContent = 'Starting export…';
+    try {
+      const response = await fetch({{ url_for('start_export')|tojson }}, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({bucket: {{ bucket|tojson }}}),
+        signal: AbortSignal.timeout(15000)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not start export.');
+      showExport(result);
+    } catch (error) {
+      exportStatus.textContent = `${error.message} You can retry or refresh to reconnect to an export that already started.`;
+      prepareButton.disabled = false;
+    }
+  });
+
+  const existingExport = {{ export_job|tojson }};
+  if (existingExport) showExport(existingExport);
+</script>
 </body>
 </html>
 """
@@ -223,7 +300,61 @@ def index():
         next_token=next_token,
         message=message,
         error=error,
+        export_job=_export_response(exports.latest(bucket)),
     )
+
+
+def _export_response(job):
+    if job is None:
+        return None
+    return {
+        **job,
+        "status_url": url_for("export_status", job_id=job["id"]),
+        "download_url": url_for("download_export", job_id=job["id"]),
+    }
+
+
+@app.post("/exports")
+def start_export():
+    data = request.get_json(silent=True) or {}
+    bucket = data.get("bucket") if isinstance(data, dict) else None
+    if bucket not in S3_BUCKET_NAMES:
+        return jsonify(error="Choose a configured bucket."), 400
+    try:
+        job = exports.start(bucket)
+    except ExportBusyError as exc:
+        return jsonify(error=str(exc)), 409
+    except Exception as exc:
+        return jsonify(error=f"Could not start export: {exc}"), 500
+    return jsonify(_export_response(job)), 202
+
+
+@app.get("/exports/<job_id>")
+def export_status(job_id):
+    job = exports.get(job_id)
+    if job is None:
+        abort(404)
+    response = jsonify(_export_response(job))
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.get("/exports/<job_id>/download")
+def download_export(job_id):
+    job = exports.get(job_id, retain=True)
+    if job is None:
+        abort(404)
+    if job["status"] != "ready":
+        return jsonify(error="The ZIP is not ready for download."), 409
+    response = send_file(
+        exports.path(job_id),
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"{job['bucket']}.zip",
+        conditional=True,
+    )
+    response.headers["Cache-Control"] = "private, no-cache"
+    return response
 
 
 @app.post("/upload")

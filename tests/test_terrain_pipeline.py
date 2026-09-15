@@ -31,7 +31,7 @@ class TerrainPipelineTest(unittest.TestCase):
         self.assertEqual(task.op_kwargs["aws_conn_id"], "det_rg_s3")
 
     def test_project_metalink_deduplicates_repeated_urls(self):
-        path = Path(__file__).resolve().parents[1] / "dgm1.meta4"
+        path = Path(__file__).resolve().parents[1] / "dags" / "dgm1.meta4"
         sources = parse_metalink(path)
 
         self.assertEqual(len(sources), EXPECTED_SOURCE_COUNT)

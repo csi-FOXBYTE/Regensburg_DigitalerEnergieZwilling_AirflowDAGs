@@ -14,8 +14,8 @@ def _normalize_docker_host_path(path: str) -> str:
 
 GML_TOOLS_IMAGE = "ghcr.io/csi-foxbyte/citygml-tools-docker:latest"
 ENRICH_IMAGE = (
-    "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.8.0"
-    "@sha256:b2faf575e02f071e43a44189c187df0e6aa0bb1779a2e48297e1eb41e9ec483a"
+    "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.9.2"
+    "@sha256:8d96eafaaaa97c2eafbadcc565bc4f9b0f1b49a78d58968fc8b9e146d5d50bb1"
 )
 JSON_TO_3D_TILES_IMAGE = (
     "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.24"
@@ -30,8 +30,8 @@ CTB_IMAGE = (
     "@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98"
 )
 DOCKER_HOST = os.getenv("DOCKER_HOST", "unix://var/run/docker.sock")
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DGM1_META4_PATH = os.getenv("DGM1_META4_PATH", str(PROJECT_DIR / "dgm1.meta4"))
+BUNDLE_DIR = Path(__file__).resolve().parents[1]
+DGM1_META4_PATH = os.getenv("DGM1_META4_PATH", str(BUNDLE_DIR / "dgm1.meta4"))
 DGM1_DOWNLOAD_WORKERS = int(os.getenv("DGM1_DOWNLOAD_WORKERS", "4"))
 DGM1_CTB_THREADS = int(os.getenv("DGM1_CTB_THREADS", "4"))
 DGM1_UPLOAD_WORKERS = int(os.getenv("DGM1_UPLOAD_WORKERS", "8"))

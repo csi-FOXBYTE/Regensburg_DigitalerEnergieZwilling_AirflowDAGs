@@ -9,6 +9,7 @@ COPY s3-gui/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY s3-gui/app.py /app/app.py
+COPY s3-gui/bucket_exports.py /app/bucket_exports.py
 COPY LICENSE COPYING COPYING.LESSER NOTICE /app/
 
 ENV PYTHONUNBUFFERED=1

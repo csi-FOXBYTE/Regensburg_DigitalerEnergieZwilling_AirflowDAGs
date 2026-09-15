@@ -1,5 +1,9 @@
 # Airflow DAG Environment
 
+For deployment as one Git DAG bundle, see [dags/README.md](dags/README.md).
+The `dags/` directory contains both DAGs, their shared code, the DGM1 Metalink,
+and a separate [DAG requirements file](dags/requirements.txt).
+
 Apache Airflow runs **locally** (not in Docker). Only the processing tasks run inside Docker containers via `DockerOperator`. The `docker-compose.yaml` starts supporting services only: **LocalStack S3** and the **S3 GUI**.
 
 ## Prerequisites
@@ -85,8 +89,8 @@ immediately before the generated files are uploaded.
 
 ## DAG: `dgm1_terrain_pipeline`
 
-Converts all 368 DGM1 GeoTIFFs referenced by the repository-root
-`dgm1.meta4` into an EPSG:4326 Cesium Quantized Mesh terrain tileset at zoom
+Converts all 368 DGM1 GeoTIFFs referenced by
+`dags/dgm1.meta4` into an EPSG:4326 Cesium Quantized Mesh terrain tileset at zoom
 levels 0 through 18.
 
 The full-only pipeline:
@@ -166,6 +170,29 @@ Container contents are not expanded; keep `sbom.config.json` synchronized with
 For LocalStack, point `AIRFLOW_CONN_DET_RG_S3` at `http://localhost:4566`. The
 supporting containers use the separately scoped `LOCALSTACK_S3_*` variables,
 while the GUI uses `S3_GUI_*`; none of these are used implicitly by the DAGs.
+
+### Download a bucket through the S3 GUI
+
+Select a bucket and click **Prepare bucket ZIP**. The helper prepares the entire
+bucket in the background, including objects from every listing page, and shows
+progress. You can close the tab and return to the bucket later. When preparation
+finishes, click **Download bucket ZIP**.
+
+The archive preserves object paths and uses ZIP64 for large files. Preparation
+has no overall HTTP request timeout. Completed files support HTTP range requests
+so a browser or download manager can resume an interrupted transfer. A proxy or
+network can still interrupt a transfer; range support allows retrying from the
+last downloaded byte while the export remains available.
+
+The helper prepares one export at a time and stores uncompressed ZIPs in its
+temporary directory, so allow roughly the bucket's size in free disk space per
+retained export. Exports expire 24 hours after preparation or the latest download
+request; expired files are removed on the next GUI request. Keep the helper
+running: restarting it loses the in-memory job registry and requires preparing
+a new export. This background worker is intended for the helper's existing
+single-process setup.
+
+After updating the helper code, rebuild it with `docker compose up -d --build s3-gui`.
 
 ## Debugging
 
