@@ -31,14 +31,15 @@ Install `apache-airflow-providers-git` in the Airflow deployment to use
 does not install its Python requirements; install these when building or
 provisioning the Airflow environment.
 
-For example, from the repository root, using the project's current runtime:
+For example, from the bundle directory (`dags/` in the development repository,
+or the published repository root), using the project's current runtime:
 
 ```bash
 AIRFLOW_VERSION=3.1.7
 PYTHON_VERSION=3.12
 python -m pip install "apache-airflow==${AIRFLOW_VERSION}" \
   apache-airflow-providers-git \
-  -r dags/requirements.txt \
+  -r requirements.txt \
   --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
 ```
 
@@ -57,16 +58,16 @@ export AIRFLOW__DAG_PROCESSOR__DAG_BUNDLE_CONFIG_LIST='[
     "name": "regensburg",
     "classpath": "airflow.providers.git.bundles.git.GitDagBundle",
     "kwargs": {
-      "repo_url": "https://github.com/your-org/your-repository.git",
-      "tracking_ref": "main",
-      "subdir": "dags"
+      "repo_url": "https://github.com/csi-FOXBYTE/Regensburg_DigitalerEnergieZwilling_DAGs.git",
+      "tracking_ref": "main"
     }
   }
 ]'
 ```
 
 This selects both DAGs and their shared files from the same Git revision.
-If this directory becomes the root of a separate repository, omit `subdir`.
+The published repository root is the bundle, so no `subdir` is needed. To use the
+development repository instead, change `repo_url` and add `"subdir": "dags"`.
 For private repositories, configure authentication through the Git provider's
 Airflow connection. See the [Git bundle documentation](https://airflow.apache.org/docs/apache-airflow-providers-git/stable/bundles/index.html).
 

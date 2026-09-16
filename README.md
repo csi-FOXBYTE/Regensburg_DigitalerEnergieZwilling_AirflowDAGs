@@ -4,6 +4,12 @@ For deployment as one Git DAG bundle, see [dags/README.md](dags/README.md).
 The `dags/` directory contains both DAGs, their shared code, the DGM1 Metalink,
 and a separate [DAG requirements file](dags/requirements.txt).
 
+To publish the bundle to the separate DAG repository, use the manual **Publish
+DAGs** GitHub Actions workflow. It exports source `main`, placing the contents of
+`dags/` at the destination root alongside the SBOMs and license files, and commits
+the differences onto destination `main`. Configure the **`DAG_PUBLISH_TOKEN`**
+Actions secret first; see [publication setup and behavior](docs/DAG_PUBLICATION.md).
+
 Apache Airflow runs **locally** (not in Docker). Only the processing tasks run inside Docker containers via `DockerOperator`. The `docker-compose.yaml` starts supporting services only: **LocalStack S3** and the **S3 GUI**.
 
 ## Prerequisites

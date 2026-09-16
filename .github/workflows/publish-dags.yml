@@ -1,0 +1,119 @@
+name: Publish DAGs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-dags-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Prepare publication files
+        env:
+          EXPORT_DIR: ${{ runner.temp }}/dag-export
+        run: |
+          set -euo pipefail
+          mkdir -p "$EXPORT_DIR"
+          # Export committed files only, flattening dags/ into the repository root.
+          git archive HEAD:dags | tar -x -C "$EXPORT_DIR"
+          git archive HEAD -- \
+            LICENSE COPYING COPYING.LESSER NOTICE SBOM.cdx.json SBOM.csv \
+            sbom.config.json requirements-sbom.txt scripts/generate_sbom.py \
+            .gitignore | tar -x -C "$EXPORT_DIR"
+          git show HEAD:docs/DAG_PUBLICATION.md > "$EXPORT_DIR/PUBLICATION.md"
+          # The SBOM helper is publication tooling, not an Airflow DAG module.
+          printf '\nscripts/\n' >> "$EXPORT_DIR/.airflowignore"
+          cat >> "$EXPORT_DIR/README.md" <<'EOF'
+
+          ## Publication and software bill of materials
+
+          See [PUBLICATION.md](PUBLICATION.md) for publication and SBOM regeneration
+          instructions. [SBOM.cdx.json](SBOM.cdx.json) and [SBOM.csv](SBOM.csv) contain
+          the recorded DAG runtime inventory. License and attribution files are
+          included at the repository root.
+          EOF
+          for file in digital_twin_pipeline.py dgm1_terrain_pipeline.py \
+            pipeline/config.py dgm1.meta4 .airflowignore requirements.txt README.md \
+            LICENSE COPYING COPYING.LESSER NOTICE SBOM.cdx.json SBOM.csv \
+            sbom.config.json requirements-sbom.txt scripts/generate_sbom.py PUBLICATION.md; do
+            test -s "$EXPORT_DIR/$file"
+          done
+
+      - name: Commit and push differences to destination main
+        env:
+          DAG_PUBLISH_TOKEN: ${{ secrets.DAG_PUBLISH_TOKEN }}
+          EXPORT_DIR: ${{ runner.temp }}/dag-export
+          TARGET_DIR: ${{ runner.temp }}/dag-target
+          TARGET_URL: https://github.com/csi-FOXBYTE/Regensburg_DigitalerEnergieZwilling_DAGs.git
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          set -euo pipefail
+          if [[ -z "$DAG_PUBLISH_TOKEN" ]]; then
+            echo "::error::Set the DAG_PUBLISH_TOKEN Actions secret in the source repository."
+            exit 1
+          fi
+          source_sha="$(git rev-parse HEAD)"
+          authorization="$(printf 'x-access-token:%s' "$DAG_PUBLISH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$authorization"
+          # Supply credentials only to remote commands; never store them in Git config.
+          remote_git() {
+            GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $authorization" git "$@"
+          }
+
+          git init --initial-branch=main "$TARGET_DIR"
+          cd "$TARGET_DIR"
+          git remote add origin "$TARGET_URL"
+          main_ref="$(remote_git ls-remote --heads origin refs/heads/main)"
+          if [[ -n "$main_ref" ]]; then
+            remote_git fetch --depth=1 origin refs/heads/main
+            git checkout -B main FETCH_HEAD
+          else
+            existing_refs="$(remote_git ls-remote origin)"
+            if [[ -n "$existing_refs" ]]; then
+              echo "::error::Destination has history but no main branch. Create main before publishing."
+              exit 1
+            fi
+          fi
+
+          # The destination is the published snapshot. Preserve its Git history and
+          # repository automation, but remove obsolete publication files.
+          rsync -a --delete --exclude='/.git/' --exclude='/.github/' \
+            "$EXPORT_DIR/" "$TARGET_DIR/"
+          git add --all -- . ':!.github'
+          if git diff --cached --quiet; then
+            echo 'Destination main already matches the publication.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git diff --cached --stat
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m "Publish DAGs from ${SOURCE_REPOSITORY}@${source_sha}"
+          # A concurrent target update causes a rejection, preserving its history.
+          remote_git push origin HEAD:refs/heads/main
+          {
+            echo "Published ${SOURCE_REPOSITORY}@${source_sha} to destination main."
+            echo
+            echo '```text'
+            git show --stat --oneline HEAD
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
