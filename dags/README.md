@@ -143,22 +143,157 @@ These optional values are forwarded to the converter container.
 Use positive integers for concurrency settings. Leave `DGM1_META4_PATH` unset
 to use the Metalink shipped with the selected bundle revision.
 
-## Trigger parameters
+## Run your first conversion
 
-Supply these through the Airflow trigger form or API.
+This guide runs `digital_twin_pipeline` with a CityGML ZIP and optional
+building-age-zone and geothermal enrichment datasets. It produces enriched
+CityGML, 3D Tiles, and an address database.
 
-| DAG | Required parameters | Optional parameters |
+### 1. Complete the environment setup
+
+Complete the [Airflow dependency installation](#airflow-environment-and-dependencies),
+[Git bundle configuration](#git-bundle-configuration), and
+[runtime prerequisites](#runtime-prerequisites) above. Configure the
+[shared environment variables and S3 connection](#shared-configuration).
+
+Check that `digital_twin_pipeline` appears in your Airflow UI without import
+errors. The task workers must be able to access the shared workspace, run the
+processing Docker images, and connect to your S3 service using `det_rg_s3`.
+
+### 2. Prepare the S3 buckets
+
+Create or choose three separate buckets. The examples below use:
+
+| Example bucket | Purpose |
+|---|---|
+| `regensburg-input` | Source CityGML ZIP and optional enrichment GeoPackages. |
+| `regensburg-tiles` | Generated 3D Tiles and address database. |
+| `regensburg-citygml` | Enriched CityGML files. |
+
+All buckets must already exist before you trigger the run. The `det_rg_s3`
+connection needs permission to read the input objects and to list, delete,
+and upload objects in the output buckets. Use dedicated output buckets,
+distinct from the input bucket and from each other: the pipeline clears
+their existing contents before uploading replacements.
+
+### 3. Upload the input files
+
+Using your S3 client or your storage service's web interface, upload these
+files to the root of the input bucket:
+
+| Filename / object key | Contents | Required? |
 |---|---|---|
-| `digital_twin_pipeline` | `bucket`, `key`, `tiles_output_bucket`, `gml_output_bucket` | `source_crs`, `municipality_key`, `age_zones_key`, `geothermal_key`, `skip_cleanup` |
-| `dgm1_terrain_pipeline` | `terrain_output_bucket` | `skip_cleanup` |
+| `lod2.zip` | ZIP archive containing the source CityGML files. | Yes |
+| `age_zones.gpkg` | Building-age-zone (Baualtersklassen) GeoPackage for enrichment. | No |
+| `geothermal.gpkg` | Geothermal GeoPackage for enrichment. | No |
 
-`bucket` and `key` select the input CityGML ZIP. Optional GeoPackage keys refer
-to objects in that same input bucket. The municipality defaults to Regensburg
-(`09362000`). The address database is uploaded to `tiles_output_bucket`.
+Keep the optional GeoPackages as separate objects alongside the ZIP. The
+main input must contain CityGML; a LoD2 GeoPackage cannot replace `lod2.zip`.
+Note the source coordinate reference system so you can set `source_crs`
+correctly in the next step.
 
+### 4. Configure the conversion
+
+Open `digital_twin_pipeline` in the Airflow UI and open its trigger form.
+Use the following table to fill in the parameters. The same parameter names
+can also be supplied when triggering through the Airflow API.
+
+| Parameter | Required / default | Description |
+|---|---|---|
+| `bucket` | Required | S3 bucket containing the CityGML ZIP and any optional enrichment GeoPackages, for example `regensburg-input`. |
+| `key` | Required | S3 object key of the ZIP archive containing the source CityGML files, for example `lod2.zip`. The main input must be a CityGML ZIP; a GeoPackage is not supported here. |
+| `tiles_output_bucket` | Required | Dedicated S3 bucket for the generated 3D Tiles and address database (`det-rg-addresses.sqlite`), for example `regensburg-tiles`. Existing bucket contents are cleared before upload. |
+| `gml_output_bucket` | Required | Dedicated S3 bucket for the enriched CityGML files, for example `regensburg-citygml`. Existing bucket contents are cleared after CityGML conversion succeeds and before upload. |
+| `source_crs` | Optional; PROJ string below | Source coordinate reference system passed to the 3D Tiles converter and used as a fallback during enrichment. The default uses UTM zone 32 with the GRS80 ellipsoid. Set this to match the coordinates in your source data. |
+| `municipality_key` | Optional; `"09362000"` | Municipality identifier used to restrict the enrichment dataset to one city. The default selects Regensburg. Supply it as a string to preserve the leading zero. |
+| `age_zones_key` | Optional; `null` | S3 object key of the building-age-zone (Baualtersklassen) GeoPackage in `bucket`, for example `age_zones.gpkg`. Supplies building-age-zone data for enrichment. Omit it or use `null` to run without this optional dataset. |
+| `geothermal_key` | Optional; `null` | S3 object key of the geothermal GeoPackage in `bucket`, for example `geothermal.gpkg`. Supplies geothermal data for enrichment. Omit it or use `null` to run without this optional dataset. |
+| `skip_cleanup` | Optional; `false` | Set to `true` to keep downloaded inputs and generated artifacts in the run workspace after successful uploads, for example when inspecting a run. |
+
+The default `source_crs` value is:
+
+```text
++proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs
+```
+
+Object keys are paths within `bucket`, not local paths or full `s3://` URLs.
+For files uploaded at the bucket root, the key equals the filename:
+`key` is `lod2.zip`, `age_zones_key` is `age_zones.gpkg`, and
+`geothermal_key` is `geothermal.gpkg`.
+If the files are under a prefix, include it, for example
+`enrichment/age_zones.gpkg`.
+
+Example trigger configuration with both optional enrichment datasets:
+
+```json
+{
+  "bucket": "regensburg-input",
+  "key": "lod2.zip",
+  "tiles_output_bucket": "regensburg-tiles",
+  "gml_output_bucket": "regensburg-citygml",
+  "source_crs": "+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs",
+  "municipality_key": "09362000",
+  "age_zones_key": "age_zones.gpkg",
+  "geothermal_key": "geothermal.gpkg",
+  "skip_cleanup": false
+}
+```
+
+Replace the example bucket names with your existing S3 buckets. If you did
+not upload an optional GeoPackage, leave its key unset or use `null` instead
+of the example filename. Check that `source_crs` matches your CityGML data
+and that `municipality_key` selects the intended municipality.
+
+To inspect intermediate files after this first run, set `skip_cleanup` to
+`true`; the default `false` removes them after successful uploads.
+
+### 5. Trigger the conversion and follow its progress
+
+Ensure the DAG is unpaused, submit the trigger form, and open the new run
+in Airflow. Follow the task states as the pipeline downloads and extracts
+the inputs, converts CityGML to CityJSON, and enriches the buildings. It then
+generates and uploads the 3D Tiles, address database, and enriched CityGML.
+
+Wait for the run to finish successfully. If a task fails, open that task's
+logs to see the error. A successful conversion task alone does not confirm
+that the outputs were uploaded: also check `upload_tiles`,
+`upload_address_db`, and `upload_gml`.
+
+### 6. Find the outputs and inspect run artifacts
+
+Using the example bucket names, the outputs are:
+
+| Location | Result |
+|---|---|
+| `s3://regensburg-tiles/` | Generated 3D Tiles files. |
+| `s3://regensburg-tiles/det-rg-addresses.sqlite` | Address database. |
+| `s3://regensburg-citygml/` | Enriched CityGML files. |
+
+Generated folder structures are preserved within each output bucket; outputs
+are not placed under a separate prefix for each run. A later conversion to
+the same output buckets replaces the previous results.
+
+The local run workspace is under
+`CITYJSON_WORK_DIR/jobs/<sanitized-run-id>/`. The directory name is derived
+from the Airflow run ID, with characters other than word characters and
+hyphens replaced by hyphens and leading or trailing hyphens removed.
+Its `manifest.json` records progress, errors, and retained artifact paths.
 Successful runs remove intermediate files unless `skip_cleanup` is `true`.
-Failed runs retain their workspace. The run's `manifest.json` records progress
-and retained artifacts.
+Failed runs retain their workspace for troubleshooting. The manifest remains
+after successful cleanup.
+
+## DGM1 terrain trigger parameters
+
+The separate `dgm1_terrain_pipeline` uses the configured Metalink as its
+input. Supply these parameters through its Airflow trigger form or API:
+
+| Parameter | Required / default | Description |
+|---|---|---|
+| `terrain_output_bucket` | Required | Dedicated S3 bucket for the validated Cesium Quantized Mesh terrain tileset, for example `regensburg-terrain`. Existing bucket contents are cleared before the replacement tileset is uploaded. |
+| `skip_cleanup` | Optional; `false` | Set to `true` to keep downloaded TIFFs, the VRT mosaic, generated terrain, and validation reports after successful publication. |
+
+The terrain pipeline follows the same workspace and manifest conventions
+described in [step 6](#6-find-the-outputs-and-inspect-run-artifacts).
 
 ## DGM1 attribution
 
