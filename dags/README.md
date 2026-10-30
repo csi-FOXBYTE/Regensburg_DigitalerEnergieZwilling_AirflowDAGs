@@ -118,6 +118,21 @@ and fail if it is missing or has the wrong connection type. Supply credentials
 appropriate to your S3 service through that connection or its configured AWS
 authentication mechanism.
 
+### Security limits
+
+The input archive is untrusted and extracted defensively; run-supplied bucket
+parameters are validated before a bucket is cleared or written.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DET_ALLOWED_BUCKETS` | _(empty = any valid name)_ | Comma-separated allowlist of bucket names. When set, a run may only clear/write buckets on this list. Leave empty to accept any syntactically valid bucket name. |
+| `MAX_ZIP_ENTRIES` | `50000` | Maximum number of entries in the input ZIP. |
+| `MAX_ZIP_TOTAL_BYTES` | `21474836480` (20 GiB) | Maximum total uncompressed size of the input ZIP. |
+| `MAX_ZIP_RATIO` | `1000` | Maximum per-entry compression ratio (guards against decompression bombs). |
+
+Bucket names must match `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`. Archive entries
+that escape the extraction directory or are symlinks are rejected.
+
 ### CityJSON to 3D Tiles options
 
 These optional values are forwarded to the converter container.

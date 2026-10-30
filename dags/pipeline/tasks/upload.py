@@ -1,6 +1,6 @@
 import os
 from airflow.providers.standard.operators.python import PythonOperator
-from pipeline.config import get_job_dir
+from pipeline.config import get_job_dir, validate_bucket
 from pipeline import manifest as mf
 from pipeline.s3_connection import get_s3_hook
 
@@ -26,6 +26,7 @@ def _clear_bucket_callable(params, run_id, task_id, bucket_param, aws_conn_id):
     bucket = params.get(bucket_param)
     if not bucket:
         raise ValueError(f"Missing param: {bucket_param}")
+    validate_bucket(bucket)
     mf.update_step(job_dir, task_id, "running")
     try:
         _clear_bucket(bucket, aws_conn_id)
@@ -68,6 +69,7 @@ def _upload_callable(params, run_id, task_id, src_dir, bucket_param, aws_conn_id
     bucket = params.get(bucket_param)
     if not bucket:
         raise ValueError(f"Missing param: {bucket_param}")
+    validate_bucket(bucket)
     mf.update_step(job_dir, task_id, "running")
     try:
         _upload_folder(os.path.join(job_dir, src_dir), bucket, aws_conn_id)
