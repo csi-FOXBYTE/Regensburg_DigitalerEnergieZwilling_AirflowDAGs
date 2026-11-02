@@ -39,9 +39,9 @@
   "additionalComponents": [
     {
       "type": "container",
-      "bom-ref": "oci:ghcr.io/csi-foxbyte/citygml-tools-docker:latest",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/citygml-tools-docker:v2.4.0@sha256:2ab31f2226775bdd74f0640be8b69f87effa8d1e840b5f80e10ac08c7bfd82cb",
       "name": "ghcr.io/csi-foxbyte/citygml-tools-docker",
-      "version": "latest (not digest pinned)",
+      "version": "v2.4.0@sha256:2ab31f2226775bdd74f0640be8b69f87effa8d1e840b5f80e10ac08c7bfd82cb",
       "scope": "required",
       "ecosystem": "OCI container",
       "relationship": "referenced pipeline runtime software",
@@ -111,9 +111,9 @@
     },
     {
       "type": "container",
-      "bom-ref": "oci:ghcr.io/tum-gis/ctb-quantized-mesh:latest@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98",
+      "bom-ref": "oci:ghcr.io/tum-gis/ctb-quantized-mesh@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98",
       "name": "ghcr.io/tum-gis/ctb-quantized-mesh",
-      "version": "latest@sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98",
+      "version": "sha256:31053c0cee60fe2f6651812786b2861e1dda03b25a88f2fa6325a4a9e266ad98",
       "scope": "required",
       "ecosystem": "OCI container",
       "relationship": "referenced pipeline runtime software",
