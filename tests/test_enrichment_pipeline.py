@@ -166,6 +166,8 @@ class EnrichmentPipelineTest(unittest.TestCase):
             mock.patch.object(extract_zip.zipfile, "ZipFile") as zip_file,
             mock.patch.object(extract_zip.mf, "update_step"),
         ):
+            archive = zip_file.return_value.__enter__.return_value
+            archive.infolist.return_value = [extract_zip.zipfile.ZipInfo("ok.json")]
             extract_zip._extract_zip_callable(
                 {"key": "../../outside.zip"},
                 "manual__test",
@@ -177,6 +179,33 @@ class EnrichmentPipelineTest(unittest.TestCase):
         zip_file.return_value.__enter__.return_value.extractall.assert_called_once_with(
             "/work/job/gml_in"
         )
+
+    def test_safe_extract_rejects_path_traversal(self):
+        info = extract_zip.zipfile.ZipInfo("../../../etc/evil")
+        archive = mock.Mock()
+        archive.infolist.return_value = [info]
+        with self.assertRaises(ValueError):
+            extract_zip._safe_extract(archive, "/work/job/gml_in")
+        archive.extractall.assert_not_called()
+
+    def test_safe_extract_rejects_symlink_entry(self):
+        info = extract_zip.zipfile.ZipInfo("link")
+        info.external_attr = 0o120777 << 16  # S_IFLNK
+        archive = mock.Mock()
+        archive.infolist.return_value = [info]
+        with self.assertRaises(ValueError):
+            extract_zip._safe_extract(archive, "/work/job/gml_in")
+        archive.extractall.assert_not_called()
+
+    def test_safe_extract_rejects_decompression_bomb(self):
+        info = extract_zip.zipfile.ZipInfo("bomb.gml")
+        info.compress_size = 1_000
+        info.file_size = 10_000_000_000  # ratio far above MAX_ZIP_RATIO
+        archive = mock.Mock()
+        archive.infolist.return_value = [info]
+        with self.assertRaises(ValueError):
+            extract_zip._safe_extract(archive, "/work/job/gml_in")
+        archive.extractall.assert_not_called()
 
     def test_download_gpkg_is_skipped_without_optional_keys(self):
         with (
@@ -197,6 +226,28 @@ class EnrichmentPipelineTest(unittest.TestCase):
             "download_gpkg_task",
             "skipped",
         )
+
+
+class BucketValidationTest(unittest.TestCase):
+    def test_accepts_valid_bucket(self):
+        from pipeline.config import validate_bucket
+
+        self.assertEqual(validate_bucket("regensburg-input"), "regensburg-input")
+
+    def test_rejects_invalid_bucket_name(self):
+        from pipeline.config import validate_bucket
+
+        for bad in ["", "A", "UPPER", "has space", "s3://x", "../evil"]:
+            with self.assertRaises(ValueError):
+                validate_bucket(bad)
+
+    def test_enforces_allowlist_when_set(self):
+        from pipeline import config
+
+        with mock.patch.object(config, "ALLOWED_BUCKETS", frozenset({"allowed-bucket"})):
+            self.assertEqual(config.validate_bucket("allowed-bucket"), "allowed-bucket")
+            with self.assertRaises(ValueError):
+                config.validate_bucket("other-bucket")
 
 
 if __name__ == "__main__":

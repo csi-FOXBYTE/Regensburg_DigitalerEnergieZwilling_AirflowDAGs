@@ -9,6 +9,9 @@ tmp/
 venv/
 .venv/
 
+# Generated Airflow config holds secrets (fernet/secret/jwt keys); never commit it
+config/airflow.cfg
+
 workdir/
 
 .airflow/
