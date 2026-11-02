@@ -17,8 +17,8 @@ GML_TOOLS_IMAGE = (
     "@sha256:2ab31f2226775bdd74f0640be8b69f87effa8d1e840b5f80e10ac08c7bfd82cb"
 )
 ENRICH_IMAGE = (
-    "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.9.3"
-    "@sha256:9fd120989da64f9c8a023212a1dadf95b6899bdd29481f705d90c37a8e0ddeac"
+    "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.9.4"
+    "@sha256:dcbaede979d8de476e4e4f3d1fee1b2f8707cf850c4b1b790b9b33caef2764c9"
 )
 JSON_TO_3D_TILES_IMAGE = (
     "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.24"

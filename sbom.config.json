@@ -57,9 +57,9 @@
     },
     {
       "type": "container",
-      "bom-ref": "oci:ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.9.3@sha256:9fd120989da64f9c8a023212a1dadf95b6899bdd29481f705d90c37a8e0ddeac",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.9.4@sha256:dcbaede979d8de476e4e4f3d1fee1b2f8707cf850c4b1b790b9b33caef2764c9",
       "name": "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment",
-      "version": "0.9.3@sha256:9fd120989da64f9c8a023212a1dadf95b6899bdd29481f705d90c37a8e0ddeac",
+      "version": "0.9.4@sha256:dcbaede979d8de476e4e4f3d1fee1b2f8707cf850c4b1b790b9b33caef2764c9",
       "scope": "required",
       "ecosystem": "OCI container",
       "relationship": "referenced pipeline runtime software",
