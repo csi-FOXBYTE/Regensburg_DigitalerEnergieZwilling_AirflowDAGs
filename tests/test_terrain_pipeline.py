@@ -121,7 +121,7 @@ class TerrainPipelineTest(unittest.TestCase):
                     "manual--terrain",
                     run_id,
                     "dgm1_terrain_pipeline",
-                    {"terrain_output_bucket": "terrain"},
+                    {"terrain_output_bucket": "det-rg-terrain"},
                     ["publish_terrain"],
                 )
                 client = _FakeS3Client()
@@ -136,7 +136,7 @@ class TerrainPipelineTest(unittest.TestCase):
                     mock.patch.object(terrain_publish, "DGM1_UPLOAD_WORKERS", 1),
                 ):
                     terrain_publish._publish_terrain_callable(
-                        {"terrain_output_bucket": "terrain"},
+                        {"terrain_output_bucket": "det-rg-terrain"},
                         run_id,
                         "publish_terrain",
                         "det_rg_s3",

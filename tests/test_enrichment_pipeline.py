@@ -97,7 +97,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
 
     def test_download_gpkg_fetches_age_zones_and_geothermal_data(self):
         params = {
-            "bucket": "input",
+            "bucket": "det-rg-upload",
             "age_zones_key": "reference/Baualtersklassen.gpkg",
             "geothermal_key": "reference/Geothermie.gpkg",
         }
@@ -118,13 +118,13 @@ class EnrichmentPipelineTest(unittest.TestCase):
             download_from_s3.call_args_list,
             [
                 mock.call(
-                    "input",
+                    "det-rg-upload",
                     "reference/Baualtersklassen.gpkg",
                     "/work/job/gpkg/age_zones.gpkg",
                     "det_rg_s3",
                 ),
                 mock.call(
-                    "input",
+                    "det-rg-upload",
                     "reference/Geothermie.gpkg",
                     "/work/job/gpkg/geothermal.gpkg",
                     "det_rg_s3",
@@ -146,14 +146,14 @@ class EnrichmentPipelineTest(unittest.TestCase):
             mock.patch.object(download.mf, "update_step"),
         ):
             download._download_callable(
-                {"bucket": "input", "key": "../../outside.zip"},
+                {"bucket": "det-rg-upload", "key": "../../outside.zip"},
                 "manual__test",
                 "download_file_task",
                 "det_rg_s3",
             )
 
         download_from_s3.assert_called_once_with(
-            "input",
+            "det-rg-upload",
             "../../outside.zip",
             "/work/job/zip/input.zip",
             "det_rg_s3",
@@ -214,7 +214,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
             mock.patch.object(download.mf, "update_step") as update_step,
         ):
             download._download_gpkg_callable(
-                {"bucket": "input"},
+                {"bucket": "det-rg-upload"},
                 "manual__test",
                 "download_gpkg_task",
                 "det_rg_s3",
@@ -229,15 +229,15 @@ class EnrichmentPipelineTest(unittest.TestCase):
 
 
 class BucketValidationTest(unittest.TestCase):
-    def test_accepts_valid_bucket(self):
+    def test_accepts_allowlisted_bucket(self):
         from pipeline.config import validate_bucket
 
-        self.assertEqual(validate_bucket("regensburg-input"), "regensburg-input")
+        self.assertEqual(validate_bucket("det-rg-upload"), "det-rg-upload")
 
     def test_rejects_invalid_bucket_name(self):
         from pipeline.config import validate_bucket
 
-        for bad in ["", "A", "UPPER", "has space", "s3://x", "../evil"]:
+        for bad in ["", "A", "UPPER", "has space", "s3://x", "../evil", None]:
             with self.assertRaises(ValueError):
                 validate_bucket(bad)
 
@@ -248,6 +248,53 @@ class BucketValidationTest(unittest.TestCase):
             self.assertEqual(config.validate_bucket("allowed-bucket"), "allowed-bucket")
             with self.assertRaises(ValueError):
                 config.validate_bucket("other-bucket")
+            with self.assertRaises(ValueError):
+                config.validate_bucket("det-rg-upload")
+
+    def test_unset_allowlist_falls_back_to_project_buckets(self):
+        from pipeline import config
+
+        for unset in (None, "", " , "):
+            self.assertEqual(
+                config._parse_allowed_buckets(unset),
+                config.DEFAULT_ALLOWED_BUCKETS,
+            )
+        self.assertEqual(
+            config._parse_allowed_buckets(" a-bucket ,b-bucket,"),
+            frozenset({"a-bucket", "b-bucket"}),
+        )
+        with mock.patch.object(config, "ALLOWED_BUCKETS", config.DEFAULT_ALLOWED_BUCKETS):
+            with self.assertRaisesRegex(ValueError, "not in the allowlist"):
+                config.validate_bucket("any-reachable-bucket")
+
+    def test_download_rejects_non_allowlisted_bucket_before_s3_access(self):
+        with (
+            mock.patch.object(download, "get_job_dir", return_value="/work/job"),
+            mock.patch.object(download, "download_from_s3") as download_from_s3,
+            mock.patch.object(download.mf, "update_step"),
+        ):
+            with self.assertRaisesRegex(ValueError, "not in the allowlist"):
+                download._download_callable(
+                    {"bucket": "foreign-bucket", "key": "lod2.zip"},
+                    "manual__test",
+                    "download_file_task",
+                    "det_rg_s3",
+                )
+            with self.assertRaisesRegex(ValueError, "not in the allowlist"):
+                download._download_gpkg_callable(
+                    {"bucket": "foreign-bucket", "age_zones_key": "a.gpkg"},
+                    "manual__test",
+                    "download_gpkg_task",
+                    "det_rg_s3",
+                )
+        download_from_s3.assert_not_called()
+
+    def test_distinct_bucket_roles(self):
+        from pipeline import config
+
+        config.validate_distinct_buckets({"input": "a-bucket", "tiles": "b-bucket"})
+        with self.assertRaisesRegex(ValueError, "dedicated buckets"):
+            config.validate_distinct_buckets({"input": "a-bucket", "tiles": "a-bucket"})
 
 
 if __name__ == "__main__":

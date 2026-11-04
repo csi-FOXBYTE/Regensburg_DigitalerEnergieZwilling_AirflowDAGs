@@ -47,28 +47,59 @@ MAX_ZIP_TOTAL_BYTES = int(os.getenv("MAX_ZIP_TOTAL_BYTES", str(20 * 1024 ** 3)))
 MAX_ZIP_RATIO = float(os.getenv("MAX_ZIP_RATIO", "1000"))
 
 # S3 bucket parameters are supplied per run. They must look like a valid bucket
-# name and, when an allowlist is configured, be a member of it (F-STAT-017).
+# name and be a member of the allowlist (F-STAT-017). Without an explicit
+# DET_ALLOWED_BUCKETS the allowlist is the project's standard bucket set (the
+# buckets created by the local stack and listed in .env.example), so run
+# parameters can never target arbitrary buckets reachable with the credentials.
 _BUCKET_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$")
-ALLOWED_BUCKETS = frozenset(
-    name.strip()
-    for name in os.getenv("DET_ALLOWED_BUCKETS", "").split(",")
-    if name.strip()
-)
+DEFAULT_ALLOWED_BUCKETS = frozenset({
+    "det-rg-upload",
+    "det-rg-gml",
+    "det-rg-json",
+    "det-rg-main",
+    "det-rg-terrain",
+})
 
+
+def _parse_allowed_buckets(value: str | None) -> frozenset[str]:
+    configured = frozenset(
+        name.strip() for name in (value or "").split(",") if name.strip()
+    )
+    return configured or DEFAULT_ALLOWED_BUCKETS
+
+
+ALLOWED_BUCKETS = _parse_allowed_buckets(os.getenv("DET_ALLOWED_BUCKETS"))
 
 def validate_bucket(bucket: str) -> str:
-    """Validate a run-supplied S3 bucket name before it is cleared or written.
+    """Validate a run-supplied S3 bucket name before it is read, cleared or written.
 
-    Rejects malformed names and, when ``DET_ALLOWED_BUCKETS`` is set, any bucket
-    outside the allowlist so an arbitrary bucket cannot be emptied or written to.
+    Rejects malformed names and any bucket outside the allowlist
+    (``DET_ALLOWED_BUCKETS``, or ``DEFAULT_ALLOWED_BUCKETS`` when unset) so an
+    arbitrary bucket cannot be emptied or written to.
     """
-    if not _BUCKET_NAME_RE.match(bucket):
+    if not isinstance(bucket, str) or not _BUCKET_NAME_RE.match(bucket):
         raise ValueError(f"Invalid S3 bucket name: {bucket!r}")
-    if ALLOWED_BUCKETS and bucket not in ALLOWED_BUCKETS:
+    if bucket not in ALLOWED_BUCKETS:
         raise ValueError(
             f"Bucket {bucket!r} is not in the allowlist (DET_ALLOWED_BUCKETS)"
         )
     return bucket
+
+
+def validate_distinct_buckets(buckets: dict[str, str]) -> None:
+    """Reject runs that use one bucket for several roles.
+
+    Publication prunes objects that are not part of the new output, so a
+    shared bucket would delete the other role's data (e.g. the input ZIP).
+    """
+    seen: dict[str, str] = {}
+    for role, bucket in buckets.items():
+        if bucket in seen:
+            raise ValueError(
+                f"Bucket {bucket!r} is used for both {seen[bucket]} and {role}; "
+                "use dedicated buckets"
+            )
+        seen[bucket] = role
 
 WORK_DIR = _normalize_docker_host_path(os.getenv(
     "CITYJSON_WORK_DIR",

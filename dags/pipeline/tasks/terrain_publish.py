@@ -5,7 +5,7 @@ from pathlib import Path
 from airflow.providers.standard.operators.python import PythonOperator
 
 from pipeline import manifest as mf
-from pipeline.config import DGM1_UPLOAD_WORKERS, get_job_dir
+from pipeline.config import DGM1_UPLOAD_WORKERS, get_job_dir, validate_bucket
 from pipeline.s3_connection import get_s3_hook
 from pipeline.terrain_validation import TERRAIN_MEDIA_TYPE
 
@@ -17,6 +17,7 @@ def _publish_terrain_callable(params, run_id, task_id, aws_conn_id):
         bucket = params.get("terrain_output_bucket")
         if not bucket:
             raise ValueError("Missing param: terrain_output_bucket")
+        validate_bucket(bucket)
         terrain_dir = job_dir / "terrain"
         layer_path = terrain_dir / "layer.json"
         tile_paths = sorted(terrain_dir.rglob("*.terrain"))

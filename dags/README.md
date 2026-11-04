@@ -111,6 +111,7 @@ Example environment values (replace the paths, endpoint, and credentials):
 export CITYJSON_WORK_DIR=/srv/regensburg/workdir
 export DOCKER_HOST=unix:///var/run/docker.sock
 export AIRFLOW_CONN_DET_RG_S3='{"conn_type":"aws","login":"your-access-key","password":"your-secret-key","extra":{"endpoint_url":"https://your-s3-host","region_name":"eu-central-1","config_kwargs":{"s3":{"addressing_style":"path"}}}}'
+export DET_ALLOWED_BUCKETS=regensburg-input,regensburg-tiles,regensburg-citygml,regensburg-terrain
 ```
 
 Keep the connection JSON on one line. Both DAGs explicitly request `det_rg_s3`
@@ -121,11 +122,13 @@ authentication mechanism.
 ### Security limits
 
 The input archive is untrusted and extracted defensively; run-supplied bucket
-parameters are validated before a bucket is cleared or written.
+parameters are validated against `DET_ALLOWED_BUCKETS` before a bucket is read
+or written, so a run cannot target other buckets reachable with the
+`det_rg_s3` credentials.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DET_ALLOWED_BUCKETS` | _(empty = any valid name)_ | Comma-separated allowlist of bucket names. When set, a run may only clear/write buckets on this list. Leave empty to accept any syntactically valid bucket name. |
+| `DET_ALLOWED_BUCKETS` | _(unset = `det-rg-upload,det-rg-gml,det-rg-json,det-rg-main,det-rg-terrain`)_ | Comma-separated allowlist of the buckets a run may read from or publish to. Every bucket parameter (`bucket`, `tiles_output_bucket`, `gml_output_bucket`, `terrain_output_bucket`) must be on this list; other buckets are rejected before any S3 access. When unset or empty, only the project's standard buckets above are allowed. Set it to your deployment's input and output buckets. There is no wildcard. |
 | `MAX_ZIP_ENTRIES` | `50000` | Maximum number of entries in the input ZIP. |
 | `MAX_ZIP_TOTAL_BYTES` | `21474836480` (20 GiB) | Maximum total uncompressed size of the input ZIP. |
 | `MAX_ZIP_RATIO` | `1000` | Maximum per-entry compression ratio (guards against decompression bombs). |
@@ -190,6 +193,10 @@ connection needs permission to read the input objects and to list, delete,
 and upload objects in the output buckets. Use dedicated output buckets,
 distinct from the input bucket and from each other: the pipeline clears
 their existing contents before uploading replacements.
+
+List all of them in `DET_ALLOWED_BUCKETS` (see [Security limits](#security-limits)),
+for example `regensburg-input,regensburg-tiles,regensburg-citygml`. Runs that
+name a bucket outside this list fail before accessing S3.
 
 ### 3. Upload the input files
 
