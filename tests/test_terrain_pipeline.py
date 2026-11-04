@@ -10,6 +10,9 @@ from unittest import mock
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dags"))
+sys.path.insert(0, os.path.dirname(__file__))
+
+from s3_fake import FakeS3Client
 
 from pipeline import config, manifest
 from pipeline.tasks import cleanup, terrain_processing, terrain_publish
@@ -97,7 +100,7 @@ class TerrainPipelineTest(unittest.TestCase):
         self.assertEqual(details["triangle_count"], 1)
         self.assertEqual(details["extension_ids"], [1])
 
-    def test_publish_clears_bucket_and_uploads_layer_last(self):
+    def test_publish_stages_tiles_promotes_layer_last_and_prunes(self):
         with tempfile.TemporaryDirectory() as directory:
             work_dir = Path(directory)
             run_id = "manual__terrain"
@@ -124,7 +127,9 @@ class TerrainPipelineTest(unittest.TestCase):
                     {"terrain_output_bucket": "det-rg-terrain"},
                     ["publish_terrain"],
                 )
-                client = _FakeS3Client()
+                client = FakeS3Client(
+                    {"det-rg-terrain": {"obsolete": b"x", "layer.json": b"{}"}}
+                )
                 hook = mock.Mock()
                 hook.get_conn.return_value = client
                 with (
@@ -142,10 +147,16 @@ class TerrainPipelineTest(unittest.TestCase):
                         "det_rg_s3",
                     )
 
-            self.assertEqual(client.deleted, ["obsolete"])
-            self.assertEqual(client.uploads[-1][0], "layer.json")
-            self.assertEqual(client.uploads[0][0], "0/0/0.terrain")
-            self.assertNotIn("ContentEncoding", client.uploads[0][1])
+            self.assertEqual(
+                set(client.live("det-rg-terrain")), {"layer.json", "0/0/0.terrain"}
+            )
+            copies = [key for kind, _bucket, key in client.events if kind == "copy"]
+            self.assertEqual(copies, ["0/0/0.terrain", "layer.json"])
+            tile = client.objects["det-rg-terrain"]["0/0/0.terrain"]["args"]
+            self.assertEqual(tile["ContentType"], "application/vnd.quantized-mesh")
+            self.assertNotIn("ContentEncoding", tile)
+            layer = client.objects["det-rg-terrain"]["layer.json"]["args"]
+            self.assertEqual(layer["CacheControl"], "no-cache")
             get_s3_hook.assert_called_once_with("det_rg_s3")
 
     def test_normalization_streams_gzip_and_fixes_ctb_metadata(self):
@@ -248,26 +259,6 @@ class TerrainPipelineTest(unittest.TestCase):
                     result = json.load(file)
                 self.assertTrue(artifact.is_file())
                 self.assertEqual(result["steps"]["cleanup"]["status"], "skipped")
-
-
-class _FakeS3Client:
-    def __init__(self):
-        self.deleted = []
-        self.uploads = []
-        self.list_calls = 0
-
-    def list_objects_v2(self, **_kwargs):
-        self.list_calls += 1
-        if self.list_calls == 1:
-            return {"Contents": [{"Key": "obsolete"}]}
-        return {}
-
-    def delete_objects(self, Bucket, Delete):
-        self.deleted.extend(item["Key"] for item in Delete["Objects"])
-        return {}
-
-    def upload_file(self, filename, bucket, key, ExtraArgs):
-        self.uploads.append((key, ExtraArgs))
 
 
 def _quantized_mesh_tile(prefix: bytes = b"") -> bytes:

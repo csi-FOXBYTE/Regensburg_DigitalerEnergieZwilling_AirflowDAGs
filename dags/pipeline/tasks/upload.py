@@ -1,97 +1,77 @@
 import os
+
 from airflow.providers.standard.operators.python import PythonOperator
-from pipeline.config import get_job_dir, validate_bucket
+
 from pipeline import manifest as mf
+from pipeline import publication
+from pipeline.config import (
+    PUBLISH_WORKERS,
+    get_job_dir,
+    sanitize_job_id,
+    validate_bucket,
+    validate_distinct_buckets,
+)
 from pipeline.s3_connection import get_s3_hook
 
 
-def _clear_bucket(bucket: str, aws_conn_id: str):
-    hook = get_s3_hook(aws_conn_id)
-    s3_client = hook.get_conn()
-    paginator = s3_client.get_paginator("list_objects_v2")
-    total_deleted = 0
-    for page in paginator.paginate(Bucket=bucket, PaginationConfig={"PageSize": 100}):
-        objects = page.get("Contents", [])
-        if objects:
-            s3_client.delete_objects(
-                Bucket=bucket,
-                Delete={"Objects": [{"Key": obj["Key"]} for obj in objects]},
+def _publish_outputs_callable(
+    params,
+    run_id,
+    task_id,
+    outputs,
+    aws_conn_id,
+    exclusive_bucket_params=(),
+):
+    """Publish all outputs of a run together via staged, verified replacement.
+
+    ``outputs`` is a list of dicts with ``bucket_param``, ``directories`` and
+    optional ``required_keys``/``entry_keys``. They are promoted in list order
+    and only pruned once every output has been promoted.
+    """
+    job_dir = get_job_dir(run_id)
+    mf.update_step(job_dir, task_id, "running")
+    try:
+        roles = {}
+        for name in (*exclusive_bucket_params, *(o["bucket_param"] for o in outputs)):
+            bucket = params.get(name)
+            if not bucket:
+                raise ValueError(f"Missing param: {name}")
+            roles[name] = validate_bucket(bucket)
+        validate_distinct_buckets(roles)
+
+        job_id = sanitize_job_id(run_id)
+        plans = [
+            publication.build_plan(
+                params[output["bucket_param"]],
+                job_id,
+                [os.path.join(job_dir, d) for d in output["directories"]],
+                required_keys=output.get("required_keys", ()),
+                entry_keys=output.get("entry_keys", ()),
+                label=output["bucket_param"],
             )
-            total_deleted += len(objects)
-    print(f"Cleared {total_deleted} existing object(s) from s3://{bucket}/")
-
-
-def _clear_bucket_callable(params, run_id, task_id, bucket_param, aws_conn_id):
-    job_dir = get_job_dir(run_id)
-    bucket = params.get(bucket_param)
-    if not bucket:
-        raise ValueError(f"Missing param: {bucket_param}")
-    validate_bucket(bucket)
-    mf.update_step(job_dir, task_id, "running")
-    try:
-        _clear_bucket(bucket, aws_conn_id)
+            for output in outputs
+        ]
+        client = get_s3_hook(aws_conn_id).get_conn()
+        publication.publish(client, plans, run_id=run_id, workers=PUBLISH_WORKERS)
         mf.update_step(job_dir, task_id, "success")
     except Exception as e:
         mf.update_step(job_dir, task_id, "failed", error=str(e))
         raise
 
 
-def make_clear_bucket_task(
+def make_publish_outputs_task(
     task_id: str,
-    bucket_param: str,
+    outputs: list[dict],
     aws_conn_id: str,
+    exclusive_bucket_params: tuple[str, ...] = (),
 ) -> PythonOperator:
     return PythonOperator(
         task_id=task_id,
-        python_callable=_clear_bucket_callable,
+        python_callable=_publish_outputs_callable,
         op_kwargs={
             "task_id": task_id,
-            "bucket_param": bucket_param,
+            "outputs": outputs,
             "aws_conn_id": aws_conn_id,
-        },
-    )
-
-
-def _upload_folder(src_dir: str, bucket: str, aws_conn_id: str):
-    if not os.path.isdir(src_dir):
-        raise FileNotFoundError(f"Source directory does not exist: {src_dir}")
-    hook = get_s3_hook(aws_conn_id)
-    for root, _dirs, files in os.walk(src_dir):
-        for fname in files:
-            full_path = os.path.normpath(os.path.join(root, fname))
-            key = os.path.relpath(full_path, src_dir)
-            hook.load_file(filename=full_path, key=key, bucket_name=bucket, replace=True)
-            print(f"Uploaded '{full_path}' to s3://{bucket}/{key}")
-
-
-def _upload_callable(params, run_id, task_id, src_dir, bucket_param, aws_conn_id):
-    job_dir = get_job_dir(run_id)
-    bucket = params.get(bucket_param)
-    if not bucket:
-        raise ValueError(f"Missing param: {bucket_param}")
-    validate_bucket(bucket)
-    mf.update_step(job_dir, task_id, "running")
-    try:
-        _upload_folder(os.path.join(job_dir, src_dir), bucket, aws_conn_id)
-        mf.update_step(job_dir, task_id, "success")
-    except Exception as e:
-        mf.update_step(job_dir, task_id, "failed", error=str(e))
-        raise
-
-
-def make_upload_task(
-    task_id: str,
-    src_dir: str,
-    bucket_param: str,
-    aws_conn_id: str,
-) -> PythonOperator:
-    return PythonOperator(
-        task_id=task_id,
-        python_callable=_upload_callable,
-        op_kwargs={
-            "task_id": task_id,
-            "src_dir": src_dir,
-            "bucket_param": bucket_param,
-            "aws_conn_id": aws_conn_id,
+            "exclusive_bucket_params": exclusive_bucket_params,
         },
     )

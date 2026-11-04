@@ -88,8 +88,9 @@ in versioned checkouts without depending on the original repository location.
   cannot remove run data. Provide sufficient storage for the DGM1 source TIFFs
   and generated terrain.
 - Workers need network access to S3 and the HTTPS sources in `dgm1.meta4`.
-  Output buckets must already exist. Use dedicated output buckets: the DAGs
-  clear them before publishing replacements.
+  Output buckets must already exist. Use dedicated output buckets: each run
+  replaces their contents and deletes objects that are not part of its output
+  (see [Publication to the output buckets](#publication-to-the-output-buckets)).
 
 ## Environment variables
 
@@ -156,10 +157,50 @@ These optional values are forwarded to the converter container.
 | `DGM1_META4_PATH` | `dgm1.meta4` in this bundle | Optional override for the source Metalink. Use an absolute path readable by the worker. The current pipeline expects 368 unique source TIFFs. |
 | `DGM1_DOWNLOAD_WORKERS` | `4` | Concurrent source downloads. |
 | `DGM1_CTB_THREADS` | `4` | Terrain generation threads. |
-| `DGM1_UPLOAD_WORKERS` | `8` | Concurrent terrain uploads. |
+| `DGM1_UPLOAD_WORKERS` | `8` | Concurrent terrain uploads and server-side copies during publication. |
 
 Use positive integers for concurrency settings. Leave `DGM1_META4_PATH` unset
 to use the Metalink shipped with the selected bundle revision.
+
+### Publication options
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PUBLISH_WORKERS` | `8` | Concurrent uploads and server-side copies when `digital_twin_pipeline` publishes its outputs. |
+
+### Publication to the output buckets
+
+Consumers read the output buckets at their root (`tileset.json`, `layer.json`,
+`det-rg-addresses.sqlite`, CityGML files), so each run replaces the bucket
+contents in place, without ever emptying a bucket first:
+
+1. All new objects are uploaded to the run's staging prefix
+   `.det-publication/staging/<sanitized-run-id>/` in the target bucket. Live
+   objects are not touched.
+2. The staging prefix is listed and must contain exactly the expected object
+   keys and sizes. Incomplete uploads are never promoted.
+3. Staged objects are copied server-side to their live keys. Root documents
+   (`tileset.json`, `layer.json`) are copied last, so a client never discovers
+   a new root before the content it references.
+4. Only after every output bucket of the run is promoted are objects that are
+   not part of the new output deleted, including staging data.
+5. `.det-publication/status.json` records the outcome per bucket: `state`
+   (`published` or `failed`), the run ID, `live_content` and the last
+   successful publication. Error details stay in the run's `manifest.json`.
+
+`digital_twin_pipeline` publishes CityGML and 3D Tiles in one
+`publish_outputs` task: both outputs are staged and verified before either is
+promoted. If a run fails while staging or verifying, the previous outputs stay
+live unchanged and the run's staging data is removed. A failure during the
+short server-side copy phase can leave a bucket with a mix of new and previous
+objects (`live_content: partially_replaced` or `replaced`), but never empty;
+rerun the DAG to complete the replacement. Staging data left by an aborted
+worker is removed by the next successful publication. Each DAG publishes from
+one run at a time (`max_active_runs=1`).
+
+The bucket temporarily needs room for a second copy of the output. The
+`det_rg_s3` credentials need list, read, write, and delete access to the
+output buckets.
 
 ## Run your first conversion
 
@@ -189,10 +230,11 @@ Create or choose three separate buckets. The examples below use:
 | `regensburg-citygml` | Enriched CityGML files. |
 
 All buckets must already exist before you trigger the run. The `det_rg_s3`
-connection needs permission to read the input objects and to list, delete,
-and upload objects in the output buckets. Use dedicated output buckets,
-distinct from the input bucket and from each other: the pipeline clears
-their existing contents before uploading replacements.
+connection needs permission to read the input objects and to list, read,
+upload, and delete objects in the output buckets. Use dedicated output
+buckets, distinct from the input bucket and from each other: a run replaces
+their contents and deletes objects that are not part of its output. Runs that
+reuse one bucket for several roles are rejected.
 
 List all of them in `DET_ALLOWED_BUCKETS` (see [Security limits](#security-limits)),
 for example `regensburg-input,regensburg-tiles,regensburg-citygml`. Runs that
@@ -224,8 +266,8 @@ can also be supplied when triggering through the Airflow API.
 |---|---|---|
 | `bucket` | Required | S3 bucket containing the CityGML ZIP and any optional enrichment GeoPackages, for example `regensburg-input`. |
 | `key` | Required | S3 object key of the ZIP archive containing the source CityGML files, for example `lod2.zip`. The main input must be a CityGML ZIP; a GeoPackage is not supported here. |
-| `tiles_output_bucket` | Required | Dedicated S3 bucket for the generated 3D Tiles and address database (`det-rg-addresses.sqlite`), for example `regensburg-tiles`. Existing bucket contents are cleared before upload. |
-| `gml_output_bucket` | Required | Dedicated S3 bucket for the enriched CityGML files, for example `regensburg-citygml`. Existing bucket contents are cleared after CityGML conversion succeeds and before upload. |
+| `tiles_output_bucket` | Required | Dedicated S3 bucket for the generated 3D Tiles and address database (`det-rg-addresses.sqlite`), for example `regensburg-tiles`. Existing contents are replaced once the CityGML and 3D Tiles outputs are completely staged. |
+| `gml_output_bucket` | Required | Dedicated S3 bucket for the enriched CityGML files, for example `regensburg-citygml`. Existing contents are replaced once the CityGML and 3D Tiles outputs are completely staged. |
 | `source_crs` | Optional; PROJ string below | Source coordinate reference system passed to the 3D Tiles converter and used as a fallback during enrichment. The default uses UTM zone 32 with the GRS80 ellipsoid. Set this to match the coordinates in your source data. |
 | `municipality_key` | Optional; `"09362000"` | Municipality identifier used to restrict the enrichment dataset to one city. The default selects Regensburg. Supply it as a string to preserve the leading zero. |
 | `age_zones_key` | Optional; `null` | S3 object key of the building-age-zone (Baualtersklassen) GeoPackage in `bucket`, for example `age_zones.gpkg`. Supplies building-age-zone data for enrichment. Omit it or use `null` to run without this optional dataset. |
@@ -278,8 +320,7 @@ generates and uploads the 3D Tiles, address database, and enriched CityGML.
 
 Wait for the run to finish successfully. If a task fails, open that task's
 logs to see the error. A successful conversion task alone does not confirm
-that the outputs were uploaded: also check `upload_tiles`,
-`upload_address_db`, and `upload_gml`.
+that the outputs were published: also check `publish_outputs`.
 
 ### 6. Find the outputs and inspect run artifacts
 
@@ -293,7 +334,9 @@ Using the example bucket names, the outputs are:
 
 Generated folder structures are preserved within each output bucket; outputs
 are not placed under a separate prefix for each run. A later conversion to
-the same output buckets replaces the previous results.
+the same output buckets replaces the previous results. Each output bucket
+also contains `.det-publication/status.json` describing the last publication
+attempt.
 
 The local run workspace is under
 `CITYJSON_WORK_DIR/jobs/<sanitized-run-id>/`. The directory name is derived
@@ -311,7 +354,7 @@ input. Supply these parameters through its Airflow trigger form or API:
 
 | Parameter | Required / default | Description |
 |---|---|---|
-| `terrain_output_bucket` | Required | Dedicated S3 bucket for the validated Cesium Quantized Mesh terrain tileset, for example `regensburg-terrain`. Existing bucket contents are cleared before the replacement tileset is uploaded. |
+| `terrain_output_bucket` | Required | Dedicated S3 bucket for the validated Cesium Quantized Mesh terrain tileset, for example `regensburg-terrain`. Existing contents are replaced once the validated tileset is completely staged; `layer.json` is switched last. |
 | `skip_cleanup` | Optional; `false` | Set to `true` to keep downloaded TIFFs, the VRT mosaic, generated terrain, and validation reports after successful publication. |
 
 The terrain pipeline follows the same workspace and manifest conventions

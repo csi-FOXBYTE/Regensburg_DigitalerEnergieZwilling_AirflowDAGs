@@ -18,25 +18,32 @@ class EnrichmentPipelineTest(unittest.TestCase):
         cleanup_task = digital_twin_dag.get_task("cleanup")
         self.assertTrue(cleanup_task.op_kwargs["honor_skip_cleanup"])
 
-    def test_gml_bucket_is_cleared_before_upload(self):
-        clear_task = digital_twin_dag.get_task("clear_gml_bucket")
+    def test_outputs_are_published_together_after_both_conversions(self):
+        publish_task = digital_twin_dag.get_task("publish_outputs")
 
-        self.assertEqual(clear_task.op_kwargs["bucket_param"], "gml_output_bucket")
         self.assertEqual(
-            clear_task.upstream_task_ids,
-            {"convert_cityjson_to_citygml"},
+            publish_task.upstream_task_ids,
+            {"generate_tiles", "convert_cityjson_to_citygml"},
         )
-        self.assertEqual(clear_task.downstream_task_ids, {"upload_gml"})
+        self.assertEqual(publish_task.downstream_task_ids, {"cleanup"})
+        outputs = publish_task.op_kwargs["outputs"]
+        self.assertEqual(
+            [output["bucket_param"] for output in outputs],
+            ["gml_output_bucket", "tiles_output_bucket"],
+        )
+        self.assertEqual(list(outputs[1]["entry_keys"]), ["tileset.json"])
+        self.assertEqual(
+            list(publish_task.op_kwargs["exclusive_bucket_params"]), ["bucket"]
+        )
+        self.assertEqual(digital_twin_dag.max_active_runs, 1)
+        for removed in ("clear_tiles_bucket", "clear_gml_bucket", "upload_tiles"):
+            self.assertFalse(digital_twin_dag.has_task(removed))
 
     def test_digital_twin_s3_tasks_use_the_dag_connection(self):
         s3_task_ids = {
             "download_file_task",
             "download_gpkg_task",
-            "clear_tiles_bucket",
-            "clear_gml_bucket",
-            "upload_tiles",
-            "upload_address_db",
-            "upload_gml",
+            "publish_outputs",
         }
 
         for task_id in s3_task_ids:

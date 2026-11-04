@@ -38,6 +38,8 @@ DGM1_META4_PATH = os.getenv("DGM1_META4_PATH", str(BUNDLE_DIR / "dgm1.meta4"))
 DGM1_DOWNLOAD_WORKERS = int(os.getenv("DGM1_DOWNLOAD_WORKERS", "4"))
 DGM1_CTB_THREADS = int(os.getenv("DGM1_CTB_THREADS", "4"))
 DGM1_UPLOAD_WORKERS = int(os.getenv("DGM1_UPLOAD_WORKERS", "8"))
+# Concurrent S3 transfers when staging and promoting digital twin outputs.
+PUBLISH_WORKERS = int(os.getenv("PUBLISH_WORKERS", "8"))
 S3_CONN_ID = "det_rg_s3"
 INPUT_ZIP_FILENAME = "input.zip"
 

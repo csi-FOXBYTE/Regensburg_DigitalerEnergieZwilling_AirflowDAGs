@@ -9,7 +9,7 @@ from pipeline.tasks.convert_citygml_to_cityjson import make_convert_citygml_to_c
 from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
 from pipeline.tasks.convert_cityjson_to_3dtiles import make_convert_cityjson_to_3dtiles_task
 from pipeline.tasks.convert_cityjson_to_citygml import make_convert_cityjson_to_citygml_task
-from pipeline.tasks.upload import make_upload_task, make_clear_bucket_task
+from pipeline.tasks.upload import make_publish_outputs_task
 from pipeline.tasks.cleanup import make_cleanup_task
 from pipeline.config import S3_CONN_ID, get_job_dir
 from pipeline import manifest as mf
@@ -27,11 +27,7 @@ STEP_NAMES = [
     "enrich_cityjson",
     "generate_tiles",
     "convert_cityjson_to_citygml",
-    "clear_tiles_bucket",
-    "clear_gml_bucket",
-    "upload_tiles",
-    "upload_address_db",
-    "upload_gml",
+    "publish_outputs",
     "cleanup",
     "finalize_manifest",
 ]
@@ -46,6 +42,9 @@ with DAG(
     start_date=datetime(2025, 1, 1),
     schedule=None,
     catchup=False,
+    # Publication prunes stale objects (including staging data) from the
+    # output buckets, so runs must not publish concurrently.
+    max_active_runs=1,
     tags=["S3", "Host", "Download"],
     params=ParamsDict({
         "bucket": Param(
@@ -108,20 +107,21 @@ with DAG(
     )
     json_to_3d_task = make_convert_cityjson_to_3dtiles_task("enriched_json", "3d_tiles")
     json_to_gml_task = make_convert_cityjson_to_citygml_task("enriched_json", "gml_out")
-    clear_tiles_bucket_task = make_clear_bucket_task(
-        "clear_tiles_bucket", "tiles_output_bucket", S3_CONN_ID
-    )
-    clear_gml_bucket_task = make_clear_bucket_task(
-        "clear_gml_bucket", "gml_output_bucket", S3_CONN_ID
-    )
-    upload_tiles_task = make_upload_task(
-        "upload_tiles", "3d_tiles", "tiles_output_bucket", S3_CONN_ID
-    )
-    upload_address_db_task = make_upload_task(
-        "upload_address_db", "address_db", "tiles_output_bucket", S3_CONN_ID
-    )
-    upload_gml_task = make_upload_task(
-        "upload_gml", "gml_out", "gml_output_bucket", S3_CONN_ID
+    # CityGML and 3D Tiles are staged and verified together; the tiles bucket
+    # is promoted last so tileset.json switches only after everything else.
+    publish_task = make_publish_outputs_task(
+        "publish_outputs",
+        [
+            {"bucket_param": "gml_output_bucket", "directories": ["gml_out"]},
+            {
+                "bucket_param": "tiles_output_bucket",
+                "directories": ["3d_tiles", "address_db"],
+                "required_keys": ["det-rg-addresses.sqlite"],
+                "entry_keys": ["tileset.json"],
+            },
+        ],
+        S3_CONN_ID,
+        exclusive_bucket_params=("bucket",),
     )
     cleanup_task = make_cleanup_task(DIRS, honor_skip_cleanup=True)
     finalize_task = PythonOperator(
@@ -133,7 +133,5 @@ with DAG(
     preparation_task >> [download_task, download_gpkg_task]
     download_task >> extract_task >> gml_to_json_task >> enrich_task
     download_gpkg_task >> enrich_task
-    enrich_task >> json_to_3d_task >> clear_tiles_bucket_task
-    clear_tiles_bucket_task >> [upload_tiles_task, upload_address_db_task]
-    enrich_task >> json_to_gml_task >> clear_gml_bucket_task >> upload_gml_task
-    [upload_tiles_task, upload_address_db_task, upload_gml_task] >> cleanup_task >> finalize_task
+    enrich_task >> [json_to_3d_task, json_to_gml_task] >> publish_task
+    publish_task >> cleanup_task >> finalize_task

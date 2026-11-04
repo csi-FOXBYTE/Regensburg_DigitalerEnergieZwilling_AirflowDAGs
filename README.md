@@ -75,9 +75,11 @@ Processes a CityGML ZIP from S3 through the full pipeline and uploads results ba
 
 1. `ensure_dirs` → `download` → `extract_zip` → `gml_to_cityjson` → `enrich`
 2. From `enrich` (parallel):
-   - `json_to_3dtiles` → `upload_tiles`
-   - `json_to_citygml` → `clear_gml_bucket` → `upload_gml`
-3. `cleanup` (runs after both uploads)
+   - `json_to_3dtiles`
+   - `json_to_citygml`
+3. `publish_outputs` (after both conversions) stages, verifies, and then
+   publishes the 3D Tiles, address database, and CityGML together
+4. `cleanup` (runs after publication)
 
 **Trigger parameters:**
 
@@ -99,8 +101,11 @@ and/or `test_data/Geothermie.gpkg` and set their object keys in
 `age_zones_key` and `geothermal_key`. Then trigger the DAG from the Airflow UI.
 Set `skip_cleanup` to `true` to retain the downloaded inputs and generated
 artifacts after a successful run. Failed runs retain their artifacts regardless.
-The GML output bucket is cleared only after CityGML conversion succeeds and
-immediately before the generated files are uploaded.
+Output buckets are never cleared up front. All outputs are first uploaded to a
+run-specific staging prefix, verified, and only then copied into place;
+objects not part of the new output are deleted last. A failed upload leaves
+the previous outputs live. See "Publication to the output buckets" in
+[dags/README.md](dags/README.md#publication-to-the-output-buckets).
 
 ## DAG: `dgm1_terrain_pipeline`
 
@@ -121,8 +126,9 @@ The full-only pipeline:
 6. Validates zoom coverage, representative low/middle/high tiles, Quantized
    Mesh structure, normal extensions, and the local HTTP loading contract used
    by `CesiumTerrainProvider.fromUrl(...)`.
-7. Clears the dedicated output bucket, uploads every terrain tile, and uploads
-   `layer.json` last.
+7. Stages every terrain tile and `layer.json` in the output bucket, verifies
+   the staged set, copies the tiles into place, switches `layer.json` last,
+   and then deletes stale objects.
 
 The VRT references the source files and avoids creating another large raster
 mosaic. CTB performs the horizontal transformation from EPSG:25832 to its
@@ -136,9 +142,11 @@ Trigger parameters:
 | `terrain_output_bucket` | Dedicated S3 bucket whose contents are replaced by the validated terrain tileset |
 | `skip_cleanup` | Keep the complete run workspace after successful publication for debugging (default: `false`) |
 
-The output bucket must already exist. It is cleared only after local validation
-passes. `layer.json` is uploaded last so a new Cesium client cannot discover a
-partially uploaded replacement. Failed runs always retain their workspace.
+The output bucket must already exist. It is never cleared up front: the new
+tileset is published only after local validation passes and the staged upload
+is complete, and `layer.json` is switched last so a new Cesium client cannot
+discover a partially uploaded replacement. A failed upload leaves the previous
+tileset live. Failed runs always retain their workspace.
 Successful runs retain it when `skip_cleanup` is `true`.
 
 Large source lists, hashes, and raster data are stored in the run workspace,
