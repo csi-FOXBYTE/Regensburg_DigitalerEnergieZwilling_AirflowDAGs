@@ -75,6 +75,9 @@ class BucketExportTest(unittest.TestCase):
             patcher.start()
             self.addCleanup(patcher.stop)
         self.client = gui.app.test_client()
+        with self.client.session_transaction() as session:
+            session[gui.CSRF_SESSION_KEY] = "test-csrf-token"
+        self.client.environ_base["HTTP_X_CSRF_TOKEN"] = "test-csrf-token"
 
     def tearDown(self):
         self.s3.release.set()

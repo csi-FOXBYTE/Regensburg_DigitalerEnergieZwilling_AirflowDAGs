@@ -177,6 +177,21 @@ For LocalStack, point `AIRFLOW_CONN_DET_RG_S3` at `http://localhost:4566`. The
 supporting containers use the separately scoped `LOCALSTACK_S3_*` variables,
 while the GUI uses `S3_GUI_*`; none of these are used implicitly by the DAGs.
 
+### S3 GUI access
+
+The S3 GUI is a local development helper without login. It can upload, download,
+delete, and clear every bucket in `S3_BUCKET_NAMES` with the `S3_GUI_*`
+credentials, which may point to production object storage. Therefore:
+
+- Compose publishes it on `127.0.0.1` only, and the app binds to `127.0.0.1` when
+  run directly (`S3_GUI_HOST`; the container image sets `0.0.0.0` internally so
+  the published port works). Do not expose it on other interfaces or behind a
+  public proxy.
+- State-changing requests (upload, ZIP upload, delete, clear, export) require a
+  per-session CSRF token embedded in the page. Reload the page if the helper was
+  restarted. Set `S3_GUI_SECRET_KEY` to keep sessions valid across restarts.
+- The container runs as an unprivileged user (UID 10001).
+
 ### Download a bucket through the S3 GUI
 
 Select a bucket and click **Prepare bucket ZIP**. The helper prepares the entire
