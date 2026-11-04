@@ -11,17 +11,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    name: Tests
+    # Publishing is blocked unless the test suite passes on source main.
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: main
+    permissions:
+      contents: read
+
   publish:
+    name: Publish
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
         shell: bash
     steps:
-      - name: Check out source main
+      - name: Check out tested source main commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          # Publish exactly the commit that passed the tests, even if main moved.
+          ref: ${{ needs.test.outputs.sha }}
           persist-credentials: false
 
       - name: Prepare publication files

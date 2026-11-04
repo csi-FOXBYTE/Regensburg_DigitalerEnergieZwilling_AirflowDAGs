@@ -9,6 +9,15 @@ DAGs** GitHub Actions workflow. It exports source `main`, placing the contents o
 `dags/` at the destination root alongside the SBOMs and license files, and commits
 the differences onto destination `main`. Configure the **`DAG_PUBLISH_TOKEN`**
 Actions secret first; see [publication setup and behavior](docs/DAG_PUBLICATION.md).
+Publication runs only after the test suite passes on the exported commit.
+
+The **CI** workflow runs the same test suite for every pull request and push to
+`main`. To run it locally in the Airflow environment from `init.sh`:
+
+```bash
+pip install -r s3-gui/requirements.txt pytest
+python -m pytest -q
+```
 
 Apache Airflow runs **locally** (not in Docker). Only the processing tasks run inside Docker containers via `DockerOperator`. The `docker-compose.yaml` starts supporting services only: **LocalStack S3** and the **S3 GUI**.
 
