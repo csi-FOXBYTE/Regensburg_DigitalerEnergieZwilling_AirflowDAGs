@@ -137,6 +137,25 @@ or written, so a run cannot target other buckets reachable with the
 Bucket names must match `^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`. Archive entries
 that escape the extraction directory or are symlinks are rejected.
 
+### Enrichment resource limits
+
+The CityJSON enrichment task processes untrusted input. The enrichment tool
+skips files that exceed its own per-file limits (file size, nesting depth,
+CityObject, vertex and per-ring vertex counts) or contain invalid CityJSON,
+and the task runs it with `STRICT=1`, so a run fails instead of publishing a
+partial dataset when any file is skipped. The following settings bound the
+whole enrichment container:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ENRICH_EXECUTION_TIMEOUT_MINUTES` | `120` | Airflow `execution_timeout` of `enrich_cityjson`. On timeout the container is stopped and the task fails. |
+| `ENRICH_MEM_LIMIT` | `4g` | Docker memory limit of the enrichment container. |
+| `ENRICH_MAX_OLD_SPACE_MB` | `3072` | Node.js heap limit (`--max-old-space-size`); keep it below `ENRICH_MEM_LIMIT`. |
+
+Raise these values together for considerably larger datasets. Enriched files
+keep their subdirectory below the converted CityJSON directory; the CityGML
+and 3D Tiles converters read their input directories recursively.
+
 ### CityJSON to 3D Tiles options
 
 These optional values are forwarded to the converter container.

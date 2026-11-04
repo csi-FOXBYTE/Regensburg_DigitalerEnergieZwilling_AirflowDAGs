@@ -1,13 +1,15 @@
+import importlib
 import os
 import sys
 import unittest
+from datetime import timedelta
 from unittest import mock
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dags"))
 
 from pipeline import s3_connection
-from pipeline.tasks import download, extract_zip
+from pipeline.tasks import download, enrich_cityjson, extract_zip
 from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
 from digital_twin_pipeline import dag as digital_twin_dag
 
@@ -100,6 +102,90 @@ class EnrichmentPipelineTest(unittest.TestCase):
         self.assertEqual(
             task.environment["GEOTHERMAL_FILE"],
             "{{ '/work/gpkg/geothermal.gpkg' if params.get('geothermal_key') else '' }}",
+        )
+
+    def test_enrichment_fails_on_partial_batches_and_is_resource_bounded(self):
+        task = digital_twin_dag.get_task("enrich_cityjson")
+
+        self.assertEqual(type(task).__name__, "EnrichDockerOperator")
+        self.assertEqual(task.environment["STRICT"], "1")
+        self.assertEqual(task.execution_timeout, timedelta(minutes=120))
+        self.assertEqual(task.mem_limit, "4g")
+        self.assertEqual(
+            task.environment["NODE_OPTIONS"], "--max-old-space-size=3072"
+        )
+
+    def test_enrichment_resource_bounds_can_be_overridden(self):
+        env = {
+            "ENRICH_EXECUTION_TIMEOUT_MINUTES": "45",
+            "ENRICH_MEM_LIMIT": "8g",
+            "ENRICH_MAX_OLD_SPACE_MB": "6144",
+        }
+        try:
+            with mock.patch.dict(os.environ, env):
+                module = importlib.reload(enrich_cityjson)
+                task = module.make_enrich_cityjson_task(
+                    "json", "enriched_json", "address_db"
+                )
+        finally:
+            importlib.reload(enrich_cityjson)
+
+        self.assertEqual(task.execution_timeout, timedelta(minutes=45))
+        self.assertEqual(task.mem_limit, "8g")
+        self.assertEqual(
+            task.environment["NODE_OPTIONS"], "--max-old-space-size=6144"
+        )
+
+    def test_enrichment_drops_optional_settings_that_rendered_empty(self):
+        environment = {
+            "SOURCE_CRS_FALLBACK": "",
+            "AGE_ZONES_FILE": "",
+            "GEOTHERMAL_FILE": "/work/gpkg/geothermal.gpkg",
+            "MUNICIPALITY_KEY": "",
+            "STRICT": "1",
+        }
+
+        self.assertEqual(
+            enrich_cityjson.drop_empty_optional_env(environment),
+            {
+                "GEOTHERMAL_FILE": "/work/gpkg/geothermal.gpkg",
+                "MUNICIPALITY_KEY": "",
+                "STRICT": "1",
+            },
+        )
+
+    def test_enrichment_execute_applies_the_filter_and_records_timeouts(self):
+        from airflow.exceptions import AirflowTaskTimeout
+
+        task = make_enrich_cityjson_task(
+            "json", "enriched_json", "address_db", with_age_zones=True
+        )
+        task.environment = {**task.environment, "AGE_ZONES_FILE": ""}
+        with (
+            mock.patch.object(
+                enrich_cityjson.JobDockerOperator, "execute", return_value=None
+            ) as execute,
+        ):
+            task.execute({"run_id": "manual__test"})
+        execute.assert_called_once()
+        self.assertNotIn("AGE_ZONES_FILE", task.environment)
+
+        with (
+            mock.patch.object(
+                enrich_cityjson.JobDockerOperator,
+                "execute",
+                side_effect=AirflowTaskTimeout("Timeout"),
+            ),
+            mock.patch.object(enrich_cityjson, "get_job_dir", return_value="/work/job"),
+            mock.patch.object(enrich_cityjson.mf, "update_step") as update_step,
+        ):
+            with self.assertRaises(AirflowTaskTimeout):
+                task.execute({"run_id": "manual__test"})
+        update_step.assert_called_once_with(
+            "/work/job",
+            "enrich_cityjson",
+            "failed",
+            error="AirflowTaskTimeout: Timeout",
         )
 
     def test_download_gpkg_fetches_age_zones_and_geothermal_data(self):
