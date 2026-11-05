@@ -93,14 +93,14 @@
     },
     {
       "type": "container",
-      "bom-ref": "oci:ghcr.io/osgeo/gdal:alpine-small-3.13.2@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e",
-      "name": "ghcr.io/osgeo/gdal",
-      "version": "alpine-small-3.13.2@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/regensburg-gdal:3.13.2-build-42047047116-1@sha256:3ede10ffb03a8a6dcdbfdf4facb24699f9efc453f1204f743372470b1b53b552",
+      "name": "ghcr.io/csi-foxbyte/regensburg-gdal",
+      "version": "3.13.2-build-42047047116-1@sha256:3ede10ffb03a8a6dcdbfdf4facb24699f9efc453f1204f743372470b1b53b552",
       "scope": "required",
       "ecosystem": "OCI container",
       "relationship": "referenced pipeline runtime software",
       "metadataSource": "dags/pipeline/config.py",
-      "notes": "GDAL terrain-processing image; packages inside the image are not expanded.",
+      "notes": "GDAL 3.13.2 terrain-processing image built by this repository (images/gdal): ghcr.io/osgeo/gdal:alpine-small-3.13.2@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e with Alpine security updates applied. Packages inside the image are not expanded here; the image carries a BuildKit SBOM attestation.",
       "licenses": [
         {
           "license": {

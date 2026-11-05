@@ -25,8 +25,8 @@ JSON_TO_3D_TILES_IMAGE = (
     "@sha256:bf409f3183367c14089b2bbe7bed7404553cea03aa96e31ef1f939b9a2b43c96"
 )
 GDAL_IMAGE = (
-    "ghcr.io/osgeo/gdal:alpine-small-3.13.2"
-    "@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e"
+    "ghcr.io/csi-foxbyte/regensburg-gdal:3.13.2-build-42047047116-1"
+    "@sha256:3ede10ffb03a8a6dcdbfdf4facb24699f9efc453f1204f743372470b1b53b552"
 )
 CTB_IMAGE = (
     "ghcr.io/tum-gis/ctb-quantized-mesh"
