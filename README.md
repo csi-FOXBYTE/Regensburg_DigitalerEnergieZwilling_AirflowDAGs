@@ -122,9 +122,9 @@ The full-only pipeline:
 2. Downloads the TIFFs with bounded concurrency, retries, and `.part` file
    resume support. A file whose size or SHA-256 differs from the reference is
    discarded and the task fails; an existing file is reused only if it matches.
-3. Uses digest-pinned GDAL 3.13.2 Docker tasks to inspect every TIFF, calculate
-   SHA-256 hashes (cross-checked against the reference again), and build a VRT
-   mosaic.
+3. Uses digest-pinned GDAL 3.13.2 Docker tasks (the repository's own
+   [GDAL image](#gdal-image)) to inspect every TIFF, calculate SHA-256 hashes
+   (cross-checked against the reference again), and build a VRT mosaic.
 4. Uses digest-pinned CTB 0.4.1 to generate Cesium-friendly Quantized Mesh
    terrain with oct-encoded vertex normals.
 5. Normalizes gzip-compressed CTB output to raw `.terrain`, if necessary.
@@ -169,6 +169,39 @@ The Bavarian DGM1 source data is provided under CC BY 4.0. The project remains
 licensed under LGPL-3.0-or-later; GDAL and CTB retain their respective upstream
 licenses.
 
+## GDAL image
+
+The terrain DAG's GDAL tasks (`inspect_sources`, `build_vrt`) run
+`ghcr.io/csi-foxbyte/regensburg-gdal`, built from
+[`images/gdal/Dockerfile`](images/gdal/Dockerfile): the OSGeo image
+`ghcr.io/osgeo/gdal:alpine-small-3.13.2`, pinned by digest, with the Alpine
+security updates published since OSGeo built it. GDAL itself, the entrypoint,
+environment and user are unchanged. Each build gets a unique tag,
+`<GDAL version>-build-<run id>-<attempt>`, and `GDAL_IMAGE` in
+[`dags/pipeline/config.py`](dags/pipeline/config.py) pins it by digest.
+
+To build and pin a new image, run **Actions → Build GDAL image → Run workflow**
+on `main`. The workflow:
+
+1. Builds `linux/amd64` with the base image and `REFRESH_EPOCH` from the
+   workflow and pushes it with a BuildKit SBOM and provenance attestation.
+2. Runs `gdalinfo --version` in the pushed image without a network as UID
+   50000, GID 0.
+3. Scans the pushed image with a digest-pinned Trivy and stops on any HIGH or
+   CRITICAL vulnerability that has a fix, and on secrets.
+4. Pins the new `image:tag@digest` in `dags/pipeline/config.py` and
+   `sbom.config.json` ([`scripts/pin_gdal_image.py`](scripts/pin_gdal_image.py))
+   and commits that to `main`. The push fails if `main` moved since the
+   dispatch; run the workflow again then.
+
+The pin commit does not publish the DAGs; run **Publish DAGs** afterwards.
+To pick up Alpine fixes published after the last build, raise `REFRESH_EPOCH`
+in [`.github/workflows/gdal-image.yml`](.github/workflows/gdal-image.yml)
+(it is part of the build cache key). To move to another GDAL release, change
+`GDAL_VERSION` and `BASE_IMAGE` there and the matching defaults in the
+Dockerfile. Airflow workers pull the image without credentials, so the GHCR
+package must be public.
+
 ## Software bill of materials
 
 The checked-in [`SBOM.cdx.json`](SBOM.cdx.json) is a CycloneDX 1.6 inventory;
@@ -187,7 +220,8 @@ Airflow environment. Only the dependency closure of the packages imported by the
 two DAGs is retained; local development services and the S3 GUI are excluded. The
 generator also adds the pipeline container images declared in `sbom.config.json`.
 Container contents are not expanded; keep `sbom.config.json` synchronized with
-`dags/pipeline/config.py`.
+`dags/pipeline/config.py` (the tests check this; the GDAL image workflow updates
+both). Regenerate the SBOMs after a pin, before publishing.
 
 ## LocalStack S3
 

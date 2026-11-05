@@ -77,7 +77,9 @@ in versioned checkouts without depending on the original repository location.
 ## Runtime prerequisites
 
 - Workers need access to a Docker daemon and permission to pull the processing
-  images declared in [pipeline/config.py](pipeline/config.py).
+  images declared in [pipeline/config.py](pipeline/config.py). The GDAL image
+  (`ghcr.io/csi-foxbyte/regensburg-gdal`) is the OSGeo GDAL image with current
+  Alpine security updates, built and pinned by the development repository.
 - `CITYJSON_WORK_DIR` must be writable by the Airflow task user and visible at
   the same absolute path to every worker running this bundle and to the Docker
   daemon. Each Docker task bind-mounts its run directory at `/work`. For workers

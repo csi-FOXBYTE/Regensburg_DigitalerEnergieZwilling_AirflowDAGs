@@ -1,0 +1,171 @@
+name: Build GDAL image
+
+# Builds images/gdal (the OSGeo GDAL image with Alpine security updates), pushes
+# it by a unique build tag, scans exactly the pushed image and pins its digest
+# on main. Publishing the DAGs stays a separate, manual step (Publish DAGs).
+on:
+  workflow_dispatch:
+
+# Nothing by default; each job gets only what it needs.
+permissions: {}
+
+# Every workflow that commits to main uses this group, so their commits never
+# race. (Publish DAGs pushes to the DAG repository, not to this main.)
+concurrency:
+  group: airflow-dags-main-commits
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/csi-foxbyte/regensburg-gdal
+  GDAL_VERSION: "3.13.2"
+  # Same GDAL build as before, pinned by digest; images/gdal/Dockerfile has the
+  # same default.
+  BASE_IMAGE: ghcr.io/osgeo/gdal:alpine-small-3.13.2@sha256:9f453a4c7af9862cce78831d7cb587f8e7b98ff4dbbc177d6b6e213e20260e0e
+  # Raise to apply Alpine security fixes published after the last build.
+  REFRESH_EPOCH: "1"
+  PLATFORM: linux/amd64
+  TRIVY_IMAGE: aquasec/trivy:0.65.0@sha256:a22415a38938a56c379387a8163fcb0ce38b10ace73e593475d3658d578b2436
+
+jobs:
+  build:
+    name: Build, check and scan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write # pushes the image to ghcr.io
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      tag: ${{ steps.prepare.outputs.tag }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare the build
+        id: prepare
+        run: |
+          set -euo pipefail
+          [[ "$BASE_IMAGE" == *":alpine-small-${GDAL_VERSION}@sha256:"* ]] || {
+            echo "::error::BASE_IMAGE must be the GDAL $GDAL_VERSION image pinned by digest"
+            exit 1
+          }
+          {
+            echo "build=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+            echo "tag=$GDAL_VERSION-build-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: images/gdal
+          platforms: ${{ env.PLATFORM }}
+          push: true
+          sbom: true
+          provenance: mode=max
+          tags: ${{ env.IMAGE }}:${{ steps.prepare.outputs.tag }}
+          build-args: |
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
+            REFRESH_EPOCH=${{ env.REFRESH_EPOCH }}
+            GDAL_VERSION=${{ env.GDAL_VERSION }}
+            BUILD_ID=${{ steps.prepare.outputs.build }}
+            SOURCE_COMMIT=${{ github.sha }}
+          cache-from: type=gha,scope=gdal-${{ env.REFRESH_EPOCH }}
+          cache-to: type=gha,mode=max,scope=gdal-${{ env.REFRESH_EPOCH }}
+
+      # The pushed image, run the way the terrain DAG runs it: no network and a
+      # non-root UID with GID 0 like the Airflow worker.
+      - name: Check the pushed image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SCAN_DIR: ${{ runner.temp }}/gdal-scan
+        run: |
+          set -euo pipefail
+          docker pull --platform "$PLATFORM" "$IMAGE@$DIGEST"
+          version="$(docker run --rm --network none --user 50000:0 "$IMAGE@$DIGEST" gdalinfo --version)"
+          echo "$version"
+          [[ "$version" == "GDAL $GDAL_VERSION "* ]] || {
+            echo "::error::Expected GDAL $GDAL_VERSION"
+            exit 1
+          }
+          mkdir -p "$SCAN_DIR"
+          docker tag "$IMAGE@$DIGEST" regensburg-gdal:scan
+          docker save regensburg-gdal:scan -o "$SCAN_DIR/image.tar"
+
+      # Fails on any HIGH or CRITICAL vulnerability with a fix, or on a secret,
+      # before anything is pinned. The scanner gets only the image archive.
+      - name: Scan the pushed image
+        env:
+          SCAN_DIR: ${{ runner.temp }}/gdal-scan
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$SCAN_DIR:/scan:ro" "$TRIVY_IMAGE" image \
+            --input /scan/image.tar --scanners vuln,secret \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
+
+  pin:
+    name: Pin on main
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # commits the pin to main
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the built commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Pin the image
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          python3 scripts/pin_gdal_image.py --image "$IMAGE" --tag "$TAG" \
+            --digest "$DIGEST" --base-image "$BASE_IMAGE"
+
+      # A commit pushed with the workflow token starts no other workflow, so
+      # this does not publish the DAGs.
+      - name: Commit the pin on main
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git add -- dags/pipeline/config.py sbom.config.json
+          if git diff --cached --quiet; then
+            echo "Nothing to pin"
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m "chore: pinned gdal image $TAG"
+          authorization="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          echo "::add-mask::$authorization"
+          # Credentials only for this push, never stored in Git config. Fails if
+          # main moved since the dispatch; start the workflow again then.
+          GIT_CONFIG_COUNT=1 \
+          GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+          GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $authorization" \
+            git push origin HEAD:refs/heads/main
+          echo "Pinned $IMAGE:$TAG@$DIGEST" >> "$GITHUB_STEP_SUMMARY"
