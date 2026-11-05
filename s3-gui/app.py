@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hmac
 import io
+import logging
 import os
 import secrets
 import zipfile
@@ -95,6 +96,7 @@ def _server_address() -> tuple[str, int]:
 
 
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 * 1024
 # Sessions only carry the CSRF token. A random per-process key is sufficient
 # because the helper runs as a single process; restarts simply require a reload.
@@ -350,9 +352,10 @@ def index():
     try:
         client = _build_s3_client()
         objects, next_token = _list_objects_page(client, bucket, continuation_token=token)
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
+        logger.exception("Could not list bucket %s", bucket)
         objects = []
-        error = str(exc)
+        error = "Could not list the bucket. See the server log for details."
 
     return render_template_string(
         TEMPLATE,
@@ -387,10 +390,11 @@ def start_export():
         return jsonify(error="Choose a configured bucket."), 400
     try:
         job = exports.start(bucket)
-    except ExportBusyError as exc:
-        return jsonify(error=str(exc)), 409
-    except Exception as exc:
-        return jsonify(error=f"Could not start export: {exc}"), 500
+    except ExportBusyError:
+        return jsonify(error="Another bucket export is still being prepared."), 409
+    except Exception:
+        logger.exception("Could not start bucket export for %s", bucket)
+        return jsonify(error="Could not start export. See the server log for details."), 500
     return jsonify(_export_response(job)), 202
 
 
