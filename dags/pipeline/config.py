@@ -21,8 +21,8 @@ ENRICH_IMAGE = (
     "@sha256:542d764dd4cf647864a98ad9ccdbd5b6c457db87f58d0f37987d871dedb81e0d"
 )
 JSON_TO_3D_TILES_IMAGE = (
-    "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.25"
-    "@sha256:bf409f3183367c14089b2bbe7bed7404553cea03aa96e31ef1f939b9a2b43c96"
+    "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.26"
+    "@sha256:a2fa31eba5dd54b10e4c28a5be226091b5ed57da933c053623f7929e6fbb16ec"
 )
 GDAL_IMAGE = (
     "ghcr.io/csi-foxbyte/regensburg-gdal:3.13.2-build-42047047116-1"
