@@ -39,9 +39,9 @@
   "additionalComponents": [
     {
       "type": "container",
-      "bom-ref": "oci:ghcr.io/csi-foxbyte/citygml-tools-docker:v2.4.0@sha256:2ab31f2226775bdd74f0640be8b69f87effa8d1e840b5f80e10ac08c7bfd82cb",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/citygml-tools-docker:v2.4.1@sha256:8bd4b6e912d7adcb41f278f8adcb1906795c005024f4873a6512bf32a5562b4e",
       "name": "ghcr.io/csi-foxbyte/citygml-tools-docker",
-      "version": "v2.4.0@sha256:2ab31f2226775bdd74f0640be8b69f87effa8d1e840b5f80e10ac08c7bfd82cb",
+      "version": "v2.4.1@sha256:8bd4b6e912d7adcb41f278f8adcb1906795c005024f4873a6512bf32a5562b4e",
       "scope": "required",
       "ecosystem": "OCI container",
       "relationship": "referenced pipeline runtime software",
@@ -75,9 +75,9 @@
     },
     {
       "type": "container",
-      "bom-ref": "oci:ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.24@sha256:39ab45799580d32d73ff58bc421df585b77e3b8fd5ec8e9dd8a9cf940b68e038",
+      "bom-ref": "oci:ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.25@sha256:bf409f3183367c14089b2bbe7bed7404553cea03aa96e31ef1f939b9a2b43c96",
       "name": "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles",
-      "version": "0.0.24@sha256:39ab45799580d32d73ff58bc421df585b77e3b8fd5ec8e9dd8a9cf940b68e038",
+      "version": "0.0.25@sha256:bf409f3183367c14089b2bbe7bed7404553cea03aa96e31ef1f939b9a2b43c96",
       "scope": "required",
       "ecosystem": "OCI container",
       "relationship": "referenced pipeline runtime software",

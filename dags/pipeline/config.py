@@ -13,16 +13,16 @@ def _normalize_docker_host_path(path: str) -> str:
 
 
 GML_TOOLS_IMAGE = (
-    "ghcr.io/csi-foxbyte/citygml-tools-docker:v2.4.0"
-    "@sha256:2ab31f2226775bdd74f0640be8b69f87effa8d1e840b5f80e10ac08c7bfd82cb"
+    "ghcr.io/csi-foxbyte/citygml-tools-docker:v2.4.1"
+    "@sha256:8bd4b6e912d7adcb41f278f8adcb1906795c005024f4873a6512bf32a5562b4e"
 )
 ENRICH_IMAGE = (
     "ghcr.io/csi-foxbyte/regensburg_digitalerenergiezwilling_offlineenrichment:0.9.5"
     "@sha256:542d764dd4cf647864a98ad9ccdbd5b6c457db87f58d0f37987d871dedb81e0d"
 )
 JSON_TO_3D_TILES_IMAGE = (
-    "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.24"
-    "@sha256:39ab45799580d32d73ff58bc421df585b77e3b8fd5ec8e9dd8a9cf940b68e038"
+    "ghcr.io/csi-foxbyte/cityjson-to-3d-tiles:0.0.25"
+    "@sha256:bf409f3183367c14089b2bbe7bed7404553cea03aa96e31ef1f939b9a2b43c96"
 )
 GDAL_IMAGE = (
     "ghcr.io/osgeo/gdal:alpine-small-3.13.2"
