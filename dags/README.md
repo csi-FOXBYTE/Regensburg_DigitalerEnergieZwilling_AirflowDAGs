@@ -84,6 +84,11 @@ in versioned checkouts without depending on the original repository location.
   running in containers, mount this shared directory at the same path inside
   the workers and on the Docker host. Processing containers use the worker's
   UID and GID.
+- Processing containers (citygml-tools, enrichment, CityJSON to 3D Tiles,
+  GDAL, CTB) run with `network_mode="none"`: they only read and write the
+  mounted run directory, so a crafted input cannot make them contact S3, the
+  internal network, or the internet. Downloads and uploads happen in the
+  Airflow worker tasks, not in the processing containers.
 - Keep the workspace outside the Git checkout so bundle refreshes and cleanup
   cannot remove run data. Provide sufficient storage for the DGM1 source TIFFs
   and generated terrain.

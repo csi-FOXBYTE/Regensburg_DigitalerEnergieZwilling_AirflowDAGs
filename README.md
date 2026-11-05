@@ -239,9 +239,11 @@ Test a single task:
 airflow tasks test digital_twin_pipeline download_file_task 2026-01-01
 ```
 
-For `DockerOperator` issues, run the container directly to isolate from Airflow:
+For `DockerOperator` issues, run the container directly to isolate from Airflow.
+The pipeline runs every processing container without a network, so add
+`--network none` to reproduce its behaviour:
 ```bash
-docker run --rm \
+docker run --rm --network none \
   -v "<ABS_WORK_DIR>:/work" \
   -e INPUT_DIR=/work/json \
   -e OUTPUT_DIR=/work/3d_tiles \
