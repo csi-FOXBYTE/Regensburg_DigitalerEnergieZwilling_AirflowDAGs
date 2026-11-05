@@ -35,6 +35,21 @@ CTB_IMAGE = (
 DOCKER_HOST = os.getenv("DOCKER_HOST", "unix://var/run/docker.sock")
 BUNDLE_DIR = Path(__file__).resolve().parents[1]
 DGM1_META4_PATH = os.getenv("DGM1_META4_PATH", str(BUNDLE_DIR / "dgm1.meta4"))
+# Provider Metalinks that publish the reference size and SHA-256 of each DGM1
+# tile (Bayerische Vermessungsverwaltung, per municipality / district). Every
+# tile in DGM1_META4_PATH must be covered by one of them or carry its own hash
+# (F-STAT-031); downloads that do not match are rejected.
+DEFAULT_DGM1_REFERENCE_METALINKS = (
+    "https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/09362000.meta4",
+    "https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/09375.meta4",
+    "https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/09273.meta4",
+)
+_reference_metalinks = os.getenv("DGM1_REFERENCE_METALINKS")
+DGM1_REFERENCE_METALINKS = (
+    DEFAULT_DGM1_REFERENCE_METALINKS
+    if _reference_metalinks is None
+    else tuple(url.strip() for url in _reference_metalinks.split(",") if url.strip())
+)
 DGM1_DOWNLOAD_WORKERS = int(os.getenv("DGM1_DOWNLOAD_WORKERS", "4"))
 DGM1_CTB_THREADS = int(os.getenv("DGM1_CTB_THREADS", "4"))
 DGM1_UPLOAD_WORKERS = int(os.getenv("DGM1_UPLOAD_WORKERS", "8"))

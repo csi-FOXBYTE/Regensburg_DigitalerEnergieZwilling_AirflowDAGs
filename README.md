@@ -115,11 +115,16 @@ levels 0 through 18.
 
 The full-only pipeline:
 
-1. Parses the Metalink and removes its repeated URLs.
+1. Parses the Metalink, removes its repeated URLs, and attaches the reference
+   size and SHA-256 that the Bayerische Vermessungsverwaltung publishes for
+   every tile in its own Metalinks (`DGM1_REFERENCE_METALINKS`, fetched over
+   HTTPS from geodaten.bayern.de). The run fails if any tile has no reference.
 2. Downloads the TIFFs with bounded concurrency, retries, and `.part` file
-   resume support.
+   resume support. A file whose size or SHA-256 differs from the reference is
+   discarded and the task fails; an existing file is reused only if it matches.
 3. Uses digest-pinned GDAL 3.13.2 Docker tasks to inspect every TIFF, calculate
-   SHA-256 hashes, and build a VRT mosaic.
+   SHA-256 hashes (cross-checked against the reference again), and build a VRT
+   mosaic.
 4. Uses digest-pinned CTB 0.4.1 to generate Cesium-friendly Quantized Mesh
    terrain with oct-encoded vertex normals.
 5. Normalizes gzip-compressed CTB output to raw `.terrain`, if necessary.

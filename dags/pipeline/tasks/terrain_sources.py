@@ -1,4 +1,5 @@
 import concurrent.futures
+import hashlib
 import json
 import math
 import os
@@ -19,6 +20,7 @@ from pipeline import manifest as mf
 from pipeline.config import (
     DGM1_DOWNLOAD_WORKERS,
     DGM1_META4_PATH,
+    DGM1_REFERENCE_METALINKS,
     DOCKER_HOST,
     GDAL_IMAGE,
     get_job_dir,
@@ -30,6 +32,9 @@ EXPECTED_SOURCE_COUNT = 368
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 DOWNLOAD_ATTEMPTS = 4
 SOURCE_NAME_PATTERN = re.compile(r"^\d+_\d+\.tif$")
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+REFERENCE_METALINK_MAX_BYTES = 32 * 1024 * 1024
+HASH_CHUNK_SIZE = 1024 * 1024
 
 
 GDAL_INSPECTION_COMMAND = """
@@ -83,7 +88,9 @@ def parse_metalink(meta4_path: str | Path) -> list[dict]:
             raise ValueError(f"All URLs for {name} duplicate another Metalink file")
         seen_names.add(name)
         seen_urls.update(unique_urls)
-        sources.append({"name": name, "urls": unique_urls})
+        source = {"name": name, "urls": unique_urls}
+        source.update(_file_reference(file_element, name))
+        sources.append(source)
 
     if len(sources) != EXPECTED_SOURCE_COUNT:
         raise ValueError(
@@ -92,17 +99,117 @@ def parse_metalink(meta4_path: str | Path) -> list[dict]:
     return sources
 
 
+def _file_reference(file_element, name: str) -> dict:
+    """Return the SHA-256 and size a Metalink publishes for one file, if any."""
+    reference = {}
+    for child in file_element:
+        tag = _local_name(child.tag)
+        text = (child.text or "").strip()
+        if tag == "hash" and (child.get("type") or "").strip().lower() == "sha-256":
+            digest = text.lower()
+            if not SHA256_PATTERN.fullmatch(digest):
+                raise ValueError(f"Invalid SHA-256 reference hash for {name}")
+            if reference.get("sha256", digest) != digest:
+                raise ValueError(f"Conflicting SHA-256 reference hashes for {name}")
+            reference["sha256"] = digest
+        elif tag == "size":
+            if not text.isdigit() or int(text) <= 0:
+                raise ValueError(f"Invalid reference size for {name}: {text!r}")
+            if reference.get("size", int(text)) != int(text):
+                raise ValueError(f"Conflicting reference sizes for {name}")
+            reference["size"] = int(text)
+    return reference
+
+
+def parse_reference_metalink(data: bytes, source: str) -> dict[str, dict]:
+    """Parse a provider Metalink into {file name: {"sha256", "size"}}.
+
+    Only the published hashes and sizes are used; download URLs keep coming
+    from the project Metalink.
+    """
+    if b"<!DOCTYPE" in data or b"<!ENTITY" in data:
+        raise ValueError(f"Reference Metalink {source} contains a DTD")
+    root = ET.fromstring(data)
+    if _local_name(root.tag) != "metalink":
+        raise ValueError(f"Reference {source} is not a Metalink document")
+    references = {}
+    for file_element in root.iter():
+        if _local_name(file_element.tag) != "file":
+            continue
+        name = file_element.get("name", "")
+        if not SOURCE_NAME_PATTERN.fullmatch(name):
+            continue
+        reference = _file_reference(file_element, name)
+        if "sha256" not in reference:
+            continue
+        if name in references and references[name] != reference:
+            raise ValueError(f"Reference Metalink {source} lists {name} twice with different hashes")
+        references[name] = reference
+    return references
+
+
+def fetch_reference_metalink(url: str) -> bytes:
+    if urlparse(url).scheme != "https":
+        raise ValueError(f"Reference Metalink must use HTTPS: {url}")
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "Regensburg-DGM1-Airflow/1.0"}
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        data = response.read(REFERENCE_METALINK_MAX_BYTES + 1)
+    if len(data) > REFERENCE_METALINK_MAX_BYTES:
+        raise ValueError(f"Reference Metalink {url} exceeds {REFERENCE_METALINK_MAX_BYTES} bytes")
+    return data
+
+
+def attach_reference_hashes(sources: list[dict], reference_urls) -> list[dict]:
+    """Attach the provider's SHA-256 and size to every source, failing closed.
+
+    A source must end up with a reference hash, either from the project
+    Metalink itself or from one of the provider Metalinks; all references for
+    the same file must agree.
+    """
+    references: dict[str, list[tuple[str, dict]]] = {}
+    for url in reference_urls:
+        for name, reference in parse_reference_metalink(
+            fetch_reference_metalink(url), url
+        ).items():
+            references.setdefault(name, []).append((url, reference))
+
+    missing = []
+    for source in sources:
+        name = source["name"]
+        for url, reference in references.get(name, []):
+            for key in ("sha256", "size"):
+                if key in reference and source.get(key, reference[key]) != reference[key]:
+                    raise ValueError(
+                        f"Reference {key} for {name} from {url} conflicts with another reference"
+                    )
+                if key in reference:
+                    source[key] = reference[key]
+        if "sha256" not in source:
+            missing.append(name)
+    if missing:
+        raise ValueError(
+            f"No published SHA-256 reference for {len(missing)} DGM1 file(s), "
+            f"e.g. {', '.join(sorted(missing)[:5])}; extend DGM1_REFERENCE_METALINKS"
+        )
+    return sources
+
+
 def _parse_metalink_callable(run_id, task_id):
     job_dir = Path(get_job_dir(run_id))
     mf.update_step(str(job_dir), task_id, "running")
     try:
-        sources = parse_metalink(DGM1_META4_PATH)
+        sources = attach_reference_hashes(
+            parse_metalink(DGM1_META4_PATH), DGM1_REFERENCE_METALINKS
+        )
         metadata_dir = job_dir / "dgm1_metadata"
         metadata_dir.mkdir(parents=True, exist_ok=True)
         _write_json(
             metadata_dir / "sources.json",
             {
                 "source": str(DGM1_META4_PATH),
+                "reference_metalinks": list(DGM1_REFERENCE_METALINKS),
                 "file_count": len(sources),
                 "url_count": sum(len(item["urls"]) for item in sources),
                 "sources": sources,
@@ -154,13 +261,19 @@ def _download_sources_callable(run_id, task_id):
 def _download_source(source: dict, destination: Path) -> dict:
     final_path = destination / source["name"]
     partial_path = destination / f"{source['name']}.part"
-    if final_path.is_file() and final_path.stat().st_size > 0:
-        return {
-            "name": source["name"],
-            "url": source["urls"][0],
-            "bytes": final_path.stat().st_size,
-            "status": "reused",
-        }
+    if final_path.is_file():
+        try:
+            _verify_reference(final_path, source)
+            return {
+                "name": source["name"],
+                "url": source["urls"][0],
+                "bytes": final_path.stat().st_size,
+                "sha256": source["sha256"],
+                "status": "reused",
+            }
+        except IOError as error:
+            print(f"Discarding existing {source['name']}: {error}")
+            final_path.unlink()
 
     last_error = None
     for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
@@ -169,11 +282,17 @@ def _download_source(source: dict, destination: Path) -> dict:
                 _download_url(url, partial_path)
                 if not partial_path.is_file() or partial_path.stat().st_size == 0:
                     raise IOError(f"Downloaded an empty file from {url}")
+                try:
+                    _verify_reference(partial_path, source)
+                except IOError:
+                    partial_path.unlink(missing_ok=True)
+                    raise
                 os.replace(partial_path, final_path)
                 return {
                     "name": source["name"],
                     "url": url,
                     "bytes": final_path.stat().st_size,
+                    "sha256": source["sha256"],
                     "status": "downloaded",
                 }
             except Exception as error:
@@ -184,6 +303,31 @@ def _download_source(source: dict, destination: Path) -> dict:
     raise RuntimeError(
         f"Failed to download {source['name']} after {DOWNLOAD_ATTEMPTS} attempts"
     ) from last_error
+
+
+def _verify_reference(path: Path, source: dict) -> None:
+    """Raise IOError unless the file matches the published size and SHA-256."""
+    expected_size = source.get("size")
+    actual_size = path.stat().st_size
+    if expected_size is not None and actual_size != expected_size:
+        raise IOError(
+            f"Size mismatch for {source['name']}: expected {expected_size} bytes, "
+            f"got {actual_size}"
+        )
+    actual = _sha256_file(path)
+    if actual != source["sha256"]:
+        raise IOError(
+            f"SHA-256 mismatch for {source['name']}: expected {source['sha256']}, "
+            f"got {actual}"
+        )
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(HASH_CHUNK_SIZE), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _download_url(url: str, partial_path: Path) -> None:
@@ -230,6 +374,16 @@ def _validate_source_reports_callable(run_id, task_id):
         expected_names = {source["name"] for source in sources}
         if set(hashes) != expected_names:
             raise ValueError("SHA-256 report does not cover exactly the Metalink sources")
+        mismatched = sorted(
+            source["name"]
+            for source in sources
+            if hashes[source["name"]] != source.get("sha256")
+        )
+        if mismatched:
+            raise ValueError(
+                "SHA-256 of inspected DGM1 sources differs from the published "
+                f"reference: {', '.join(mismatched[:5])}"
+            )
 
         bounds = [math.inf, math.inf, -math.inf, -math.inf]
         bounds_wgs84 = [math.inf, math.inf, -math.inf, -math.inf]
@@ -336,6 +490,8 @@ def make_parse_metalink_task() -> PythonOperator:
         task_id="parse_metalink",
         python_callable=_parse_metalink_callable,
         op_kwargs={"task_id": "parse_metalink"},
+        retries=2,
+        retry_delay=timedelta(minutes=2),
     )
 
 

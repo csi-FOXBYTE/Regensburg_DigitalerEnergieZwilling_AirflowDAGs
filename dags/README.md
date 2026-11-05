@@ -92,7 +92,8 @@ in versioned checkouts without depending on the original repository location.
 - Keep the workspace outside the Git checkout so bundle refreshes and cleanup
   cannot remove run data. Provide sufficient storage for the DGM1 source TIFFs
   and generated terrain.
-- Workers need network access to S3 and the HTTPS sources in `dgm1.meta4`.
+- Workers need network access to S3, the HTTPS sources in `dgm1.meta4`, and
+  the reference Metalinks in `DGM1_REFERENCE_METALINKS`.
   Output buckets must already exist. Use dedicated output buckets: each run
   replaces their contents and deletes objects that are not part of its output
   (see [Publication to the output buckets](#publication-to-the-output-buckets)).
@@ -179,6 +180,7 @@ These optional values are forwarded to the converter container.
 | Variable | Default | Purpose |
 |---|---|---|
 | `DGM1_META4_PATH` | `dgm1.meta4` in this bundle | Optional override for the source Metalink. Use an absolute path readable by the worker. The current pipeline expects 368 unique source TIFFs. |
+| `DGM1_REFERENCE_METALINKS` | `https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/09362000.meta4,https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/09375.meta4,https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/09273.meta4` | Comma-separated HTTPS Metalinks of the data provider that publish the size and SHA-256 of each DGM1 tile (city and district of Regensburg). Every tile in `DGM1_META4_PATH` must have a reference hash from one of them, or carry a `<hash type="sha-256">` in `DGM1_META4_PATH` itself; downloads that do not match fail the run. Set it to an empty value only when `DGM1_META4_PATH` contains a hash for every tile. |
 | `DGM1_DOWNLOAD_WORKERS` | `4` | Concurrent source downloads. |
 | `DGM1_CTB_THREADS` | `4` | Terrain generation threads. |
 | `DGM1_UPLOAD_WORKERS` | `8` | Concurrent terrain uploads and server-side copies during publication. |
