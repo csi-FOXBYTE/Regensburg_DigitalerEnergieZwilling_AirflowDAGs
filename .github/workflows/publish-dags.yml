@@ -13,10 +13,10 @@ concurrency:
 jobs:
   test:
     name: Tests
-    # Publishing is blocked unless the test suite passes on source main.
+    # Publishing runs only when started on main and is blocked unless the test
+    # suite passes on that commit.
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ci.yml
-    with:
-      ref: main
     permissions:
       contents: read
 

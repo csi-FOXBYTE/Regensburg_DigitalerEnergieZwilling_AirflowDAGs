@@ -4,12 +4,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Called by publish-dags.yml, which only runs on main: tests the commit that
+  # started the run and returns its SHA, so exactly that commit is published.
   workflow_call:
-    inputs:
-      ref:
-        description: Git ref to test; the tested commit SHA is returned as output.
-        type: string
-        required: true
     outputs:
       sha:
         description: Commit SHA that passed the tests.
@@ -35,21 +32,9 @@ jobs:
       AIRFLOW_VERSION: "3.1.7"
       PYTHON_VERSION: "3.12"
     steps:
-      - name: Validate workflow_call ref is a full commit SHA
-        if: ${{ github.event_name == 'workflow_call' }}
-        env:
-          INPUT_REF: ${{ inputs.ref }}
-        run: |
-          set -euo pipefail
-          if [[ ! "${INPUT_REF}" =~ ^[0-9a-fA-F]{40}$ ]]; then
-            echo "For workflow_call, inputs.ref must be a full 40-character commit SHA." >&2
-            exit 1
-          fi
-
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'workflow_call' && inputs.ref || github.sha }}
           persist-credentials: false
 
       - name: Record tested commit
