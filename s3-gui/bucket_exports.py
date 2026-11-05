@@ -22,6 +22,8 @@ from botocore.exceptions import (
 RETENTION_SECONDS = 24 * 60 * 60
 DOWNLOAD_RANGE_SIZE = 8 * 1024 * 1024
 logger = logging.getLogger(__name__)
+# Shown to the user; the exception itself only goes to the log.
+EXPORT_FAILED = "The export failed. See the server log for details."
 
 
 def _read_range(client, bucket, key, start, end, size, etag):
@@ -101,8 +103,8 @@ class BucketExports:
         worker = threading.Thread(target=self._prepare, args=(job["id"],), daemon=True)
         try:
             worker.start()
-        except Exception as exc:
-            self._update(job["id"], status="failed", error=str(exc), expires_at=time.time() + RETENTION_SECONDS)
+        except Exception:
+            self._update(job["id"], status="failed", error=EXPORT_FAILED, expires_at=time.time() + RETENTION_SECONDS)
             raise
         return result
 
@@ -170,10 +172,10 @@ class BucketExports:
                         completed += 1
                         self._update(job_id, objects=completed)
             self._update(job_id, status="ready", expires_at=time.time() + RETENTION_SECONDS)
-        except Exception as exc:
+        except Exception:
             logger.exception("Bucket export %s failed", job_id)
             try:
                 path.unlink(missing_ok=True)
             except OSError:
                 logger.exception("Could not remove incomplete bucket export %s", job_id)
-            self._update(job_id, status="failed", error=str(exc), expires_at=time.time() + RETENTION_SECONDS)
+            self._update(job_id, status="failed", error=EXPORT_FAILED, expires_at=time.time() + RETENTION_SECONDS)

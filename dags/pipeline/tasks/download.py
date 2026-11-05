@@ -1,6 +1,6 @@
 import os
 from airflow.providers.standard.operators.python import PythonOperator
-from pipeline.config import INPUT_ZIP_FILENAME, get_job_dir
+from pipeline.config import INPUT_ZIP_FILENAME, get_job_dir, validate_bucket
 from pipeline import manifest as mf
 from pipeline.s3_connection import get_s3_hook
 
@@ -22,6 +22,7 @@ def _download_callable(params, run_id, task_id, aws_conn_id):
         raise ValueError("Missing param: bucket")
     if not key:
         raise ValueError("Missing param: key")
+    validate_bucket(bucket)
     mf.update_step(job_dir, task_id, "running")
     try:
         download_from_s3(
@@ -62,6 +63,7 @@ def _download_gpkg_callable(params, run_id, task_id, aws_conn_id):
     bucket = params.get("bucket")
     if not bucket:
         raise ValueError("Missing param: bucket")
+    validate_bucket(bucket)
     mf.update_step(job_dir, task_id, "running")
     try:
         for label, key, filename in downloads:

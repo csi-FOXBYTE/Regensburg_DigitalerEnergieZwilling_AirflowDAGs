@@ -1,13 +1,26 @@
 from __future__ import annotations
 
+import hmac
 import io
+import logging
 import os
+import secrets
 import zipfile
 from typing import Any
 
 import boto3
 from botocore.config import Config
-from flask import Flask, abort, jsonify, redirect, render_template_string, request, send_file, url_for
+from flask import (
+    Flask,
+    abort,
+    jsonify,
+    redirect,
+    render_template_string,
+    request,
+    send_file,
+    session,
+    url_for,
+)
 
 from bucket_exports import BucketExports, ExportBusyError
 
@@ -68,9 +81,59 @@ def _list_objects_page(
     return objects, resp.get("NextContinuationToken")
 
 
+CSRF_SESSION_KEY = "csrf_token"
+CSRF_FORM_FIELD = "csrf_token"
+CSRF_HEADER = "X-CSRF-Token"
+CSRF_PROTECTED_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def _server_address() -> tuple[str, int]:
+    # Loopback by default; the container image sets S3_GUI_HOST=0.0.0.0 so the
+    # port published by Compose (bound to 127.0.0.1 on the host) is reachable.
+    host = os.getenv("S3_GUI_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    port = int(os.getenv("S3_GUI_INTERNAL_PORT", "3000"))
+    return host, port
+
+
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 * 1024
+# Sessions only carry the CSRF token. A random per-process key is sufficient
+# because the helper runs as a single process; restarts simply require a reload.
+app.secret_key = os.getenv("S3_GUI_SECRET_KEY") or secrets.token_bytes(32)
+app.config.update(
+    # Cookies are not port-scoped, so avoid clobbering other localhost apps.
+    SESSION_COOKIE_NAME="s3_gui_session",
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Strict",
+)
 exports = BucketExports(lambda: _build_s3_client())
+
+
+def _csrf_token() -> str:
+    token = session.get(CSRF_SESSION_KEY)
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session[CSRF_SESSION_KEY] = token
+    return token
+
+
+app.jinja_env.globals["csrf_token"] = _csrf_token
+
+
+@app.before_request
+def verify_csrf_token():
+    if request.method not in CSRF_PROTECTED_METHODS:
+        return None
+    expected = session.get(CSRF_SESSION_KEY)
+    supplied = request.headers.get(CSRF_HEADER) or request.form.get(CSRF_FORM_FIELD)
+    if (
+        not isinstance(expected, str)
+        or not isinstance(supplied, str)
+        or not hmac.compare_digest(expected.encode(), supplied.encode())
+    ):
+        abort(400, description="Missing or invalid CSRF token. Reload the page and try again.")
+    return None
 
 
 @app.before_request
@@ -133,6 +196,7 @@ TEMPLATE = """<!doctype html>
   <div class="card">
     <h2>Upload to <code>{{ bucket }}</code></h2>
     <form action="/upload" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="bucket" value="{{ bucket }}">
       <div>
         <label>Prefix (optional):</label><br>
@@ -151,6 +215,7 @@ TEMPLATE = """<!doctype html>
     <h2>Upload ZIP to <code>{{ bucket }}</code></h2>
     <p style="margin:0 0 0.75rem 0; color:#555; font-size:0.9rem;">The ZIP will be unpacked and each file uploaded individually. Directory structure inside the ZIP is preserved.</p>
     <form action="/upload-zip" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="bucket" value="{{ bucket }}">
       <div>
         <label>Prefix (optional):</label><br>
@@ -185,6 +250,7 @@ TEMPLATE = """<!doctype html>
               <td>{{ item.last_modified }}</td>
               <td>
                 <form action="/delete" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="bucket" value="{{ bucket }}">
                   <input type="hidden" name="key" value="{{ item.key }}">
                   <button type="submit">Delete</button>
@@ -202,6 +268,7 @@ TEMPLATE = """<!doctype html>
           <a href="{{ url_for('index', bucket=bucket, token=next_token) }}">Next page &raquo;</a>
         {% endif %}
         <form action="/clear" method="post" onsubmit="return confirm('Delete all objects in {{ bucket }}?')" style="margin-left:auto;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="bucket" value="{{ bucket }}">
           <button class="danger" type="submit">Clear Bucket</button>
         </form>
@@ -254,7 +321,7 @@ TEMPLATE = """<!doctype html>
     try {
       const response = await fetch({{ url_for('start_export')|tojson }}, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': {{ csrf_token()|tojson }}},
         body: JSON.stringify({bucket: {{ bucket|tojson }}}),
         signal: AbortSignal.timeout(15000)
       });
@@ -285,9 +352,10 @@ def index():
     try:
         client = _build_s3_client()
         objects, next_token = _list_objects_page(client, bucket, continuation_token=token)
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
+        logger.exception("Could not list bucket %s", bucket)
         objects = []
-        error = str(exc)
+        error = "Could not list the bucket. See the server log for details."
 
     return render_template_string(
         TEMPLATE,
@@ -322,10 +390,11 @@ def start_export():
         return jsonify(error="Choose a configured bucket."), 400
     try:
         job = exports.start(bucket)
-    except ExportBusyError as exc:
-        return jsonify(error=str(exc)), 409
-    except Exception as exc:
-        return jsonify(error=f"Could not start export: {exc}"), 500
+    except ExportBusyError:
+        return jsonify(error="Another bucket export is still being prepared."), 409
+    except Exception:
+        logger.exception("Could not start bucket export for %s", bucket)
+        return jsonify(error="Could not start export. See the server log for details."), 500
     return jsonify(_export_response(job)), 202
 
 
@@ -443,5 +512,5 @@ def clear():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("S3_GUI_INTERNAL_PORT", "3000"))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    host, port = _server_address()
+    app.run(host=host, port=port, debug=False)

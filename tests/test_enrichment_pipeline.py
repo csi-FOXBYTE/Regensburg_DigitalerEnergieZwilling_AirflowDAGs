@@ -1,13 +1,15 @@
+import importlib
 import os
 import sys
 import unittest
+from datetime import timedelta
 from unittest import mock
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dags"))
 
 from pipeline import s3_connection
-from pipeline.tasks import download, extract_zip
+from pipeline.tasks import download, enrich_cityjson, extract_zip
 from pipeline.tasks.enrich_cityjson import make_enrich_cityjson_task
 from digital_twin_pipeline import dag as digital_twin_dag
 
@@ -18,25 +20,32 @@ class EnrichmentPipelineTest(unittest.TestCase):
         cleanup_task = digital_twin_dag.get_task("cleanup")
         self.assertTrue(cleanup_task.op_kwargs["honor_skip_cleanup"])
 
-    def test_gml_bucket_is_cleared_before_upload(self):
-        clear_task = digital_twin_dag.get_task("clear_gml_bucket")
+    def test_outputs_are_published_together_after_both_conversions(self):
+        publish_task = digital_twin_dag.get_task("publish_outputs")
 
-        self.assertEqual(clear_task.op_kwargs["bucket_param"], "gml_output_bucket")
         self.assertEqual(
-            clear_task.upstream_task_ids,
-            {"convert_cityjson_to_citygml"},
+            publish_task.upstream_task_ids,
+            {"generate_tiles", "convert_cityjson_to_citygml"},
         )
-        self.assertEqual(clear_task.downstream_task_ids, {"upload_gml"})
+        self.assertEqual(publish_task.downstream_task_ids, {"cleanup"})
+        outputs = publish_task.op_kwargs["outputs"]
+        self.assertEqual(
+            [output["bucket_param"] for output in outputs],
+            ["gml_output_bucket", "tiles_output_bucket"],
+        )
+        self.assertEqual(list(outputs[1]["entry_keys"]), ["tileset.json"])
+        self.assertEqual(
+            list(publish_task.op_kwargs["exclusive_bucket_params"]), ["bucket"]
+        )
+        self.assertEqual(digital_twin_dag.max_active_runs, 1)
+        for removed in ("clear_tiles_bucket", "clear_gml_bucket", "upload_tiles"):
+            self.assertFalse(digital_twin_dag.has_task(removed))
 
     def test_digital_twin_s3_tasks_use_the_dag_connection(self):
         s3_task_ids = {
             "download_file_task",
             "download_gpkg_task",
-            "clear_tiles_bucket",
-            "clear_gml_bucket",
-            "upload_tiles",
-            "upload_address_db",
-            "upload_gml",
+            "publish_outputs",
         }
 
         for task_id in s3_task_ids:
@@ -95,9 +104,93 @@ class EnrichmentPipelineTest(unittest.TestCase):
             "{{ '/work/gpkg/geothermal.gpkg' if params.get('geothermal_key') else '' }}",
         )
 
+    def test_enrichment_fails_on_partial_batches_and_is_resource_bounded(self):
+        task = digital_twin_dag.get_task("enrich_cityjson")
+
+        self.assertEqual(type(task).__name__, "EnrichDockerOperator")
+        self.assertEqual(task.environment["STRICT"], "1")
+        self.assertEqual(task.execution_timeout, timedelta(minutes=120))
+        self.assertEqual(task.mem_limit, "4g")
+        self.assertEqual(
+            task.environment["NODE_OPTIONS"], "--max-old-space-size=3072"
+        )
+
+    def test_enrichment_resource_bounds_can_be_overridden(self):
+        env = {
+            "ENRICH_EXECUTION_TIMEOUT_MINUTES": "45",
+            "ENRICH_MEM_LIMIT": "8g",
+            "ENRICH_MAX_OLD_SPACE_MB": "6144",
+        }
+        try:
+            with mock.patch.dict(os.environ, env):
+                module = importlib.reload(enrich_cityjson)
+                task = module.make_enrich_cityjson_task(
+                    "json", "enriched_json", "address_db"
+                )
+        finally:
+            importlib.reload(enrich_cityjson)
+
+        self.assertEqual(task.execution_timeout, timedelta(minutes=45))
+        self.assertEqual(task.mem_limit, "8g")
+        self.assertEqual(
+            task.environment["NODE_OPTIONS"], "--max-old-space-size=6144"
+        )
+
+    def test_enrichment_drops_optional_settings_that_rendered_empty(self):
+        environment = {
+            "SOURCE_CRS_FALLBACK": "",
+            "AGE_ZONES_FILE": "",
+            "GEOTHERMAL_FILE": "/work/gpkg/geothermal.gpkg",
+            "MUNICIPALITY_KEY": "",
+            "STRICT": "1",
+        }
+
+        self.assertEqual(
+            enrich_cityjson.drop_empty_optional_env(environment),
+            {
+                "GEOTHERMAL_FILE": "/work/gpkg/geothermal.gpkg",
+                "MUNICIPALITY_KEY": "",
+                "STRICT": "1",
+            },
+        )
+
+    def test_enrichment_execute_applies_the_filter_and_records_timeouts(self):
+        from airflow.exceptions import AirflowTaskTimeout
+
+        task = make_enrich_cityjson_task(
+            "json", "enriched_json", "address_db", with_age_zones=True
+        )
+        task.environment = {**task.environment, "AGE_ZONES_FILE": ""}
+        with (
+            mock.patch.object(
+                enrich_cityjson.JobDockerOperator, "execute", return_value=None
+            ) as execute,
+        ):
+            task.execute({"run_id": "manual__test"})
+        execute.assert_called_once()
+        self.assertNotIn("AGE_ZONES_FILE", task.environment)
+
+        with (
+            mock.patch.object(
+                enrich_cityjson.JobDockerOperator,
+                "execute",
+                side_effect=AirflowTaskTimeout("Timeout"),
+            ),
+            mock.patch.object(enrich_cityjson, "get_job_dir", return_value="/work/job"),
+            mock.patch.object(enrich_cityjson.mf, "update_step") as update_step,
+        ):
+            with self.assertRaises(AirflowTaskTimeout):
+                task.execute({"run_id": "manual__test"})
+        update_step.assert_called_once_with(
+            "/work/job",
+            "enrich_cityjson",
+            "failed",
+            error="AirflowTaskTimeout: Timeout",
+        )
+
     def test_download_gpkg_fetches_age_zones_and_geothermal_data(self):
         params = {
-            "bucket": "input",
+            "bucket": "det-rg-upload",
             "age_zones_key": "reference/Baualtersklassen.gpkg",
             "geothermal_key": "reference/Geothermie.gpkg",
         }
@@ -118,13 +211,13 @@ class EnrichmentPipelineTest(unittest.TestCase):
             download_from_s3.call_args_list,
             [
                 mock.call(
-                    "input",
+                    "det-rg-upload",
                     "reference/Baualtersklassen.gpkg",
                     "/work/job/gpkg/age_zones.gpkg",
                     "det_rg_s3",
                 ),
                 mock.call(
-                    "input",
+                    "det-rg-upload",
                     "reference/Geothermie.gpkg",
                     "/work/job/gpkg/geothermal.gpkg",
                     "det_rg_s3",
@@ -146,14 +239,14 @@ class EnrichmentPipelineTest(unittest.TestCase):
             mock.patch.object(download.mf, "update_step"),
         ):
             download._download_callable(
-                {"bucket": "input", "key": "../../outside.zip"},
+                {"bucket": "det-rg-upload", "key": "../../outside.zip"},
                 "manual__test",
                 "download_file_task",
                 "det_rg_s3",
             )
 
         download_from_s3.assert_called_once_with(
-            "input",
+            "det-rg-upload",
             "../../outside.zip",
             "/work/job/zip/input.zip",
             "det_rg_s3",
@@ -214,7 +307,7 @@ class EnrichmentPipelineTest(unittest.TestCase):
             mock.patch.object(download.mf, "update_step") as update_step,
         ):
             download._download_gpkg_callable(
-                {"bucket": "input"},
+                {"bucket": "det-rg-upload"},
                 "manual__test",
                 "download_gpkg_task",
                 "det_rg_s3",
@@ -229,15 +322,15 @@ class EnrichmentPipelineTest(unittest.TestCase):
 
 
 class BucketValidationTest(unittest.TestCase):
-    def test_accepts_valid_bucket(self):
+    def test_accepts_allowlisted_bucket(self):
         from pipeline.config import validate_bucket
 
-        self.assertEqual(validate_bucket("regensburg-input"), "regensburg-input")
+        self.assertEqual(validate_bucket("det-rg-upload"), "det-rg-upload")
 
     def test_rejects_invalid_bucket_name(self):
         from pipeline.config import validate_bucket
 
-        for bad in ["", "A", "UPPER", "has space", "s3://x", "../evil"]:
+        for bad in ["", "A", "UPPER", "has space", "s3://x", "../evil", None]:
             with self.assertRaises(ValueError):
                 validate_bucket(bad)
 
@@ -248,6 +341,53 @@ class BucketValidationTest(unittest.TestCase):
             self.assertEqual(config.validate_bucket("allowed-bucket"), "allowed-bucket")
             with self.assertRaises(ValueError):
                 config.validate_bucket("other-bucket")
+            with self.assertRaises(ValueError):
+                config.validate_bucket("det-rg-upload")
+
+    def test_unset_allowlist_falls_back_to_project_buckets(self):
+        from pipeline import config
+
+        for unset in (None, "", " , "):
+            self.assertEqual(
+                config._parse_allowed_buckets(unset),
+                config.DEFAULT_ALLOWED_BUCKETS,
+            )
+        self.assertEqual(
+            config._parse_allowed_buckets(" a-bucket ,b-bucket,"),
+            frozenset({"a-bucket", "b-bucket"}),
+        )
+        with mock.patch.object(config, "ALLOWED_BUCKETS", config.DEFAULT_ALLOWED_BUCKETS):
+            with self.assertRaisesRegex(ValueError, "not in the allowlist"):
+                config.validate_bucket("any-reachable-bucket")
+
+    def test_download_rejects_non_allowlisted_bucket_before_s3_access(self):
+        with (
+            mock.patch.object(download, "get_job_dir", return_value="/work/job"),
+            mock.patch.object(download, "download_from_s3") as download_from_s3,
+            mock.patch.object(download.mf, "update_step"),
+        ):
+            with self.assertRaisesRegex(ValueError, "not in the allowlist"):
+                download._download_callable(
+                    {"bucket": "foreign-bucket", "key": "lod2.zip"},
+                    "manual__test",
+                    "download_file_task",
+                    "det_rg_s3",
+                )
+            with self.assertRaisesRegex(ValueError, "not in the allowlist"):
+                download._download_gpkg_callable(
+                    {"bucket": "foreign-bucket", "age_zones_key": "a.gpkg"},
+                    "manual__test",
+                    "download_gpkg_task",
+                    "det_rg_s3",
+                )
+        download_from_s3.assert_not_called()
+
+    def test_distinct_bucket_roles(self):
+        from pipeline import config
+
+        config.validate_distinct_buckets({"input": "a-bucket", "tiles": "b-bucket"})
+        with self.assertRaisesRegex(ValueError, "dedicated buckets"):
+            config.validate_distinct_buckets({"input": "a-bucket", "tiles": "a-bucket"})
 
 
 if __name__ == "__main__":

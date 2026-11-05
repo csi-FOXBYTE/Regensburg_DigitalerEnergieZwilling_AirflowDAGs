@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # Called by publish-dags.yml, which only runs on main: tests the commit that
+  # started the run and returns its SHA, so exactly that commit is published.
+  workflow_call:
+    outputs:
+      sha:
+        description: Commit SHA that passed the tests.
+        value: ${{ jobs.test.outputs.sha }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+    env:
+      # Keep in sync with init.sh.
+      AIRFLOW_VERSION: "3.1.7"
+      PYTHON_VERSION: "3.12"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Record tested commit
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: |
+          set -euo pipefail
+          constraints="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+          # Same Airflow installation as init.sh, then the S3 GUI and test runner.
+          python -m pip install "apache-airflow[amazon,docker]==${AIRFLOW_VERSION}" \
+            -r requirements.txt --constraint "$constraints"
+          python -m pip install -r s3-gui/requirements.txt "pytest==9.2.0"
+          python -m pip check
+
+      - name: Run tests
+        run: python -m pytest -q

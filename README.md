@@ -9,6 +9,15 @@ DAGs** GitHub Actions workflow. It exports source `main`, placing the contents o
 `dags/` at the destination root alongside the SBOMs and license files, and commits
 the differences onto destination `main`. Configure the **`DAG_PUBLISH_TOKEN`**
 Actions secret first; see [publication setup and behavior](docs/DAG_PUBLICATION.md).
+Publication runs only after the test suite passes on the exported commit.
+
+The **CI** workflow runs the same test suite for every pull request and push to
+`main`. To run it locally in the Airflow environment from `init.sh`:
+
+```bash
+pip install -r s3-gui/requirements.txt pytest
+python -m pytest -q
+```
 
 Apache Airflow runs **locally** (not in Docker). Only the processing tasks run inside Docker containers via `DockerOperator`. The `docker-compose.yaml` starts supporting services only: **LocalStack S3** and the **S3 GUI**.
 
@@ -66,9 +75,11 @@ Processes a CityGML ZIP from S3 through the full pipeline and uploads results ba
 
 1. `ensure_dirs` → `download` → `extract_zip` → `gml_to_cityjson` → `enrich`
 2. From `enrich` (parallel):
-   - `json_to_3dtiles` → `upload_tiles`
-   - `json_to_citygml` → `clear_gml_bucket` → `upload_gml`
-3. `cleanup` (runs after both uploads)
+   - `json_to_3dtiles`
+   - `json_to_citygml`
+3. `publish_outputs` (after both conversions) stages, verifies, and then
+   publishes the 3D Tiles, address database, and CityGML together
+4. `cleanup` (runs after publication)
 
 **Trigger parameters:**
 
@@ -90,8 +101,11 @@ and/or `test_data/Geothermie.gpkg` and set their object keys in
 `age_zones_key` and `geothermal_key`. Then trigger the DAG from the Airflow UI.
 Set `skip_cleanup` to `true` to retain the downloaded inputs and generated
 artifacts after a successful run. Failed runs retain their artifacts regardless.
-The GML output bucket is cleared only after CityGML conversion succeeds and
-immediately before the generated files are uploaded.
+Output buckets are never cleared up front. All outputs are first uploaded to a
+run-specific staging prefix, verified, and only then copied into place;
+objects not part of the new output are deleted last. A failed upload leaves
+the previous outputs live. See "Publication to the output buckets" in
+[dags/README.md](dags/README.md#publication-to-the-output-buckets).
 
 ## DAG: `dgm1_terrain_pipeline`
 
@@ -101,19 +115,25 @@ levels 0 through 18.
 
 The full-only pipeline:
 
-1. Parses the Metalink and removes its repeated URLs.
+1. Parses the Metalink, removes its repeated URLs, and attaches the reference
+   size and SHA-256 that the Bayerische Vermessungsverwaltung publishes for
+   every tile in its own Metalinks (`DGM1_REFERENCE_METALINKS`, fetched over
+   HTTPS from geodaten.bayern.de). The run fails if any tile has no reference.
 2. Downloads the TIFFs with bounded concurrency, retries, and `.part` file
-   resume support.
+   resume support. A file whose size or SHA-256 differs from the reference is
+   discarded and the task fails; an existing file is reused only if it matches.
 3. Uses digest-pinned GDAL 3.13.2 Docker tasks to inspect every TIFF, calculate
-   SHA-256 hashes, and build a VRT mosaic.
+   SHA-256 hashes (cross-checked against the reference again), and build a VRT
+   mosaic.
 4. Uses digest-pinned CTB 0.4.1 to generate Cesium-friendly Quantized Mesh
    terrain with oct-encoded vertex normals.
 5. Normalizes gzip-compressed CTB output to raw `.terrain`, if necessary.
 6. Validates zoom coverage, representative low/middle/high tiles, Quantized
    Mesh structure, normal extensions, and the local HTTP loading contract used
    by `CesiumTerrainProvider.fromUrl(...)`.
-7. Clears the dedicated output bucket, uploads every terrain tile, and uploads
-   `layer.json` last.
+7. Stages every terrain tile and `layer.json` in the output bucket, verifies
+   the staged set, copies the tiles into place, switches `layer.json` last,
+   and then deletes stale objects.
 
 The VRT references the source files and avoids creating another large raster
 mosaic. CTB performs the horizontal transformation from EPSG:25832 to its
@@ -127,9 +147,11 @@ Trigger parameters:
 | `terrain_output_bucket` | Dedicated S3 bucket whose contents are replaced by the validated terrain tileset |
 | `skip_cleanup` | Keep the complete run workspace after successful publication for debugging (default: `false`) |
 
-The output bucket must already exist. It is cleared only after local validation
-passes. `layer.json` is uploaded last so a new Cesium client cannot discover a
-partially uploaded replacement. Failed runs always retain their workspace.
+The output bucket must already exist. It is never cleared up front: the new
+tileset is published only after local validation passes and the staged upload
+is complete, and `layer.json` is switched last so a new Cesium client cannot
+discover a partially uploaded replacement. A failed upload leaves the previous
+tileset live. Failed runs always retain their workspace.
 Successful runs retain it when `skip_cleanup` is `true`.
 
 Large source lists, hashes, and raster data are stored in the run workspace,
@@ -177,6 +199,21 @@ For LocalStack, point `AIRFLOW_CONN_DET_RG_S3` at `http://localhost:4566`. The
 supporting containers use the separately scoped `LOCALSTACK_S3_*` variables,
 while the GUI uses `S3_GUI_*`; none of these are used implicitly by the DAGs.
 
+### S3 GUI access
+
+The S3 GUI is a local development helper without login. It can upload, download,
+delete, and clear every bucket in `S3_BUCKET_NAMES` with the `S3_GUI_*`
+credentials, which may point to production object storage. Therefore:
+
+- Compose publishes it on `127.0.0.1` only, and the app binds to `127.0.0.1` when
+  run directly (`S3_GUI_HOST`; the container image sets `0.0.0.0` internally so
+  the published port works). Do not expose it on other interfaces or behind a
+  public proxy.
+- State-changing requests (upload, ZIP upload, delete, clear, export) require a
+  per-session CSRF token embedded in the page. Reload the page if the helper was
+  restarted. Set `S3_GUI_SECRET_KEY` to keep sessions valid across restarts.
+- The container runs as an unprivileged user (UID 10001).
+
 ### Download a bucket through the S3 GUI
 
 Select a bucket and click **Prepare bucket ZIP**. The helper prepares the entire
@@ -207,9 +244,11 @@ Test a single task:
 airflow tasks test digital_twin_pipeline download_file_task 2026-01-01
 ```
 
-For `DockerOperator` issues, run the container directly to isolate from Airflow:
+For `DockerOperator` issues, run the container directly to isolate from Airflow.
+The pipeline runs every processing container without a network, so add
+`--network none` to reproduce its behaviour:
 ```bash
-docker run --rm \
+docker run --rm --network none \
   -v "<ABS_WORK_DIR>:/work" \
   -e INPUT_DIR=/work/json \
   -e OUTPUT_DIR=/work/3d_tiles \

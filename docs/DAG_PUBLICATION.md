@@ -28,7 +28,9 @@ this cross-repository write access. See GitHub's
 Once the workflow is committed to the source repository's default branch, open
 **Actions → Publish DAGs → Run workflow** and choose `main`. The workflow always
 exports the latest source `main`, even if another workflow branch is selected.
-It runs only on manual dispatch.
+It runs only on manual dispatch. It first runs the test suite (the reusable
+[CI workflow](../.github/workflows/ci.yml)) on source `main`; publication starts only
+if the tests pass and exports exactly the commit that was tested.
 
 The export includes:
 

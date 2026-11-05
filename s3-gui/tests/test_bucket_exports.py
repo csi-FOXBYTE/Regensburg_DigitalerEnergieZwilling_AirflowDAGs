@@ -75,6 +75,9 @@ class BucketExportTest(unittest.TestCase):
             patcher.start()
             self.addCleanup(patcher.stop)
         self.client = gui.app.test_client()
+        with self.client.session_transaction() as session:
+            session[gui.CSRF_SESSION_KEY] = "test-csrf-token"
+        self.client.environ_base["HTTP_X_CSRF_TOKEN"] = "test-csrf-token"
 
     def tearDown(self):
         self.s3.release.set()
@@ -156,7 +159,9 @@ class BucketExportTest(unittest.TestCase):
             job = self.start_export()
             result = self.wait_for_export(job["id"])
         self.assertEqual(result["status"], "failed")
-        self.assertIn("S3 connection lost", self.client.get(job["status_url"]).json["error"])
+        error = self.client.get(job["status_url"]).json["error"]
+        self.assertNotIn("S3 connection lost", error)
+        self.assertIn("export failed", error)
         self.assertFalse(self.exports.path(job["id"]).exists())
         self.assertEqual(self.client.get(job["download_url"]).status_code, 409)
 
