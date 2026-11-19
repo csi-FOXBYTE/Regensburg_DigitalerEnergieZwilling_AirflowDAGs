@@ -206,6 +206,10 @@ package must be public.
 
 The checked-in [`SBOM.cdx.json`](SBOM.cdx.json) is a CycloneDX 1.6 inventory;
 [`SBOM.csv`](SBOM.csv) provides the same components in a review-friendly table.
+[`SPDX_source.spdx.json`](SPDX_source.spdx.json) lists the tracked source files
+and their hashes. Refresh it after source changes with
+`python3 scripts/generate-source-spdx.py`; file level license conclusions remain
+unknown until reviewed. The DAG export gets its own SPDX file because its layout differs.
 Generate both files with the Python tooling in an isolated environment:
 
 ```bash

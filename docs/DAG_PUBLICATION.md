@@ -37,7 +37,8 @@ The export includes:
 - All committed contents of `dags/`, directly at the destination root.
 - `LICENSE`, `COPYING`, `COPYING.LESSER`, and `NOTICE`.
 - The checked-in `SBOM.cdx.json` and `SBOM.csv`.
-- `sbom.config.json`, `requirements-sbom.txt`, and `scripts/generate_sbom.py`.
+- A source SPDX document generated from the exported files.
+- `sbom.config.json`, `requirements-sbom.txt`, `scripts/generate_sbom.py`, and `scripts/generate-source-spdx.py`.
 - The source `.gitignore` and this document as `PUBLICATION.md`.
 
 Each run compares this snapshot with destination `main` and commits additions,
@@ -47,7 +48,7 @@ published code changes in the source repository: direct destination edits are
 overwritten on the next publication. The DAG README becomes the root README;
 local services, environment files, test data, and source Git history are not exported.
 The exported `.airflowignore` also excludes `scripts/` so Airflow does not import
-the SBOM generation tool as a DAG module.
+the inventory generation tools as DAG modules.
 
 Existing destination history is preserved. Identical content produces no commit.
 An empty destination gets its first commit on `main`; a nonempty destination must
@@ -59,7 +60,8 @@ compare against its latest state. The commit message records the source revision
 
 The license texts, notice, deployment README, and SBOMs accompany the DAG source
 for subsequent publication on Open CoDE. This workflow only pushes to the GitHub
-destination above.
+destination above. It generates `SPDX_source.spdx.json` for the flattened export;
+the source repository's SPDX document describes a different file tree.
 
 Publication copies the checked-in SBOMs unchanged. They describe the recorded
 Airflow environment, reachable DAG dependencies, and referenced container images;

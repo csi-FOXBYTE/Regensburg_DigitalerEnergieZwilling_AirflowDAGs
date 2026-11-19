@@ -47,6 +47,7 @@ jobs:
           git archive HEAD -- \
             LICENSE COPYING COPYING.LESSER NOTICE SBOM.cdx.json SBOM.csv \
             sbom.config.json requirements-sbom.txt scripts/generate_sbom.py \
+            scripts/generate-source-spdx.py \
             .gitignore | tar -x -C "$EXPORT_DIR"
           git show HEAD:docs/DAG_PUBLICATION.md > "$EXPORT_DIR/PUBLICATION.md"
           # The SBOM helper is publication tooling, not an Airflow DAG module.
@@ -57,13 +58,15 @@ jobs:
 
           See [PUBLICATION.md](PUBLICATION.md) for publication and SBOM regeneration
           instructions. [SBOM.cdx.json](SBOM.cdx.json) and [SBOM.csv](SBOM.csv) contain
-          the recorded DAG runtime inventory. License and attribution files are
-          included at the repository root.
+          the recorded DAG runtime inventory. [SPDX_source.spdx.json](SPDX_source.spdx.json)
+          lists the exported source files. License and attribution files are included
+          at the repository root.
           EOF
           for file in digital_twin_pipeline.py dgm1_terrain_pipeline.py \
             pipeline/config.py dgm1.meta4 .airflowignore requirements.txt README.md \
             LICENSE COPYING COPYING.LESSER NOTICE SBOM.cdx.json SBOM.csv \
-            sbom.config.json requirements-sbom.txt scripts/generate_sbom.py PUBLICATION.md; do
+            sbom.config.json requirements-sbom.txt scripts/generate_sbom.py \
+            scripts/generate-source-spdx.py PUBLICATION.md; do
             test -s "$EXPORT_DIR/$file"
           done
 
@@ -111,6 +114,9 @@ jobs:
           rsync -a --delete --exclude='/.git/' --exclude='/.github/' \
             "$EXPORT_DIR/" "$TARGET_DIR/"
           git add --all -- . ':!.github'
+          SPDX_SOURCE_NAME=Regensburg_DigitalerEnergieZwilling_DAGs \
+            python3 scripts/generate-source-spdx.py
+          git add -- SPDX_source.spdx.json
           if git diff --cached --quiet; then
             echo 'Destination main already matches the publication.' >> "$GITHUB_STEP_SUMMARY"
             exit 0

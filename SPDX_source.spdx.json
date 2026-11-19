@@ -1,0 +1,1247 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs source",
+  "documentNamespace": "https://spdx.org/spdxdocs/Regensburg_DigitalerEnergieZwilling_AirflowDAGs-e7065a6f503d12b9c275f5cb6cfe7e3792776bba9f346e17de88cdd1450ade3e",
+  "creationInfo": {
+    "created": "2026-10-27T06:50:39Z",
+    "creators": [
+      "Tool: generate-source-spdx.py"
+    ]
+  },
+  "comment": "Inventory of tracked source files only. License and copyright conclusions require review; built artifacts need separate inventories.",
+  "documentDescribes": [
+    "SPDXRef-SOURCE"
+  ],
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-SOURCE",
+      "name": "Regensburg_DigitalerEnergieZwilling_AirflowDAGs",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": true,
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "83949d8cc212ac854f5992ddc7ca541fed623d37",
+        "packageVerificationCodeExcludedFiles": [
+          "./SPDX_source.spdx.json"
+        ]
+      },
+      "primaryPackagePurpose": "SOURCE",
+      "licenseDeclared": "LGPL-3.0-or-later",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoFromFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    }
+  ],
+  "files": [
+    {
+      "SPDXID": "SPDXRef-File-2f754321d62f08ba8392b9b1",
+      "fileName": "./.dockerignore",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "1d88c9d141d8daa3eef70c493cda27a9a4ef9c1b"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-a3046da0d15a27e89f2afe63",
+      "fileName": "./.env.example",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "9fe364e11033413b5350945a6645748ea717ab53"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-618cd5b83d62060ba3d027e3",
+      "fileName": "./.gitattributes",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "6b1cc66d85a1171704ca44bc60a185de97107971"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-848eb2758cad1564a648c59f",
+      "fileName": "./.github/workflows/publish-dags.yml",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "895642afed609193983dc8305c97402bec0cd6fd"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-bc37d034bad564583790a46f",
+      "fileName": "./.gitignore",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b602717f7e87c59cffe903a4d60b634429a1befd"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-a5de3e5871ffcc383a229484",
+      "fileName": "./.vscode/settings.json",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "8c95388bc2f06e43d7110399ffc3bdbb9154a73d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-400d38e5cfee181230373a8b",
+      "fileName": "./COPYING",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "31a3d460bb3c7d98845187c716a30db81c44b615"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-749a7f8f1afd45dd2534a9ac",
+      "fileName": "./COPYING.LESSER",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "a8a12e6867d7ee39c21d9b11a984066099b6fb6b"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-c693279643b8cd5d248172d9",
+      "fileName": "./LICENSE",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "a8a12e6867d7ee39c21d9b11a984066099b6fb6b"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-dfb14fbb9e7d095209ec4cfd",
+      "fileName": "./NOTICE",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "4847abe25403c34566a7ac8b93c72489ea39ccf9"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-b335630551682c19a781afeb",
+      "fileName": "./README.md",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "cc44c0b42b04945a68fd3b684bdd545d776fa0f4"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-7bb12142c0ac5d1bbb68688e",
+      "fileName": "./SBOM.cdx.json",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "bf1637ccd3c927fd953c2c283b71c82a5ac0228d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-3378b775b13f3e7bcfc0d1cc",
+      "fileName": "./SBOM.csv",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "592359627c2163a6a6eebef6fa3683b4970d1334"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-9e40a518cfe646dfac7e14ac",
+      "fileName": "./dags/.airflowignore",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "96345762bd579bf1d83d8a4df68ed84b8113aa0f"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-5fc8d2a7284f3e389385dcb2",
+      "fileName": "./dags/README.md",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "ebc87123d6b8dffad131c8c510fc89171533bfb5"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-cf1744fc33d2c8356e087912",
+      "fileName": "./dags/dgm1.meta4",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "ec0a466cc7a3d98b8001810826e1b203952c3d9d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-2e5f90ce4d7fc06083d4ec53",
+      "fileName": "./dags/dgm1_terrain_pipeline.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "1fad32d50e0b006dab10b5ca8749bbcc7501b101"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-744fb67cb9d3c2343a6d2c41",
+      "fileName": "./dags/digital_twin_pipeline.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "16df1078c3975736b358d409ab806f88898e93d4"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-387d54a739a95c0584f9d6bd",
+      "fileName": "./dags/pipeline/__init__.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-1b52cf3c25c4ff10ed179d97",
+      "fileName": "./dags/pipeline/config.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "7d9909bee7ddc7e1ee389510921220f3e5b9d228"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-c0dfca43873b0757e150ae98",
+      "fileName": "./dags/pipeline/manifest.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "7f5eeb357e858ebb185d495991405263ae949556"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-af9be90d965b7a003c866024",
+      "fileName": "./dags/pipeline/operators/__init__.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-00c2f0e0f7df9444a8049f98",
+      "fileName": "./dags/pipeline/operators/job_docker_operator.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "356886536a4b1d3518cc93c8b7d59e76827b3675"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-adcc88456476af4dfc2716d5",
+      "fileName": "./dags/pipeline/s3_connection.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "d46ba9196e4091f2d645d952d97f7076421dbee7"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-9d24a288864b7a1295890685",
+      "fileName": "./dags/pipeline/tasks/__init__.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-2ab59b084ae10cda1fdf781f",
+      "fileName": "./dags/pipeline/tasks/cleanup.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "19e78a5ab075b6bf60cff55982427d747ab36060"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-6a857602302321963cab6e1c",
+      "fileName": "./dags/pipeline/tasks/convert_citygml_to_cityjson.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b057ce544ec38a784451a1eb7a1b68d3a824fe09"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-3643a60416e00acd312e6090",
+      "fileName": "./dags/pipeline/tasks/convert_cityjson_to_3dtiles.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "99f62fdbba844d3d1e3cb20637b14c5e2ce008b8"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-ab7c1ead782fddd4cdd8c97e",
+      "fileName": "./dags/pipeline/tasks/convert_cityjson_to_citygml.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "1cac0c2d54811d96ab920903820e71e27e6fc91e"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-ae152247959e1254fba8ba62",
+      "fileName": "./dags/pipeline/tasks/download.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "a078ada61b212d7f56d2a9b3414cde611780b854"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-100e40bdf5b2ca096fdb0698",
+      "fileName": "./dags/pipeline/tasks/enrich_cityjson.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "66d46166cff2497664ee115903ea486a433a2298"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-5cdc1e082b26918155b564db",
+      "fileName": "./dags/pipeline/tasks/ensure_dirs.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "57c00b78b8af42c7b96936cc727c1d79760a897d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-e130c20422b222535aec54c8",
+      "fileName": "./dags/pipeline/tasks/extract_zip.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "db954deeff7552a73668dbd779e38cda21f83bb3"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-ed21bfb4bbcb889834b3f728",
+      "fileName": "./dags/pipeline/tasks/preparation.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b1b29f6135334cfe1b86a444a456bd1d4a90f033"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-0c82b413a5e6802527b64fe1",
+      "fileName": "./dags/pipeline/tasks/terrain_processing.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "3c7dcee45e2b5edd053ac1e5a6a08dabb1d8f434"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-f235bc65a5de13ac2c1575ff",
+      "fileName": "./dags/pipeline/tasks/terrain_publish.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "57f29c1f05975853e3094fe0451eba034cc2d5c2"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-108caea847b0d44de10dcb6b",
+      "fileName": "./dags/pipeline/tasks/terrain_sources.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b12b47f8d4a4c42feabf9bf9a125f029e08a3ef9"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-587fe7e6f9629339f588078a",
+      "fileName": "./dags/pipeline/tasks/upload.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "70b3a700b42fc6fec0bdd0391d9a43aa6197fa3d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-8fc6ae440dc80b09814c68f6",
+      "fileName": "./dags/pipeline/terrain_validation.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "263f827de285116f26760b2809f08b11574ac783"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-43cec8a6411107dfc0e8862d",
+      "fileName": "./dags/requirements.txt",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "3416760806023f964f3dfb277516340fc42b4c29"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-3fde9d1a396e140fefc7676e",
+      "fileName": "./docker-compose.yaml",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "406158554f9e63efe71451796bbd48ca38ca9739"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-95ce44548f3f05c36ca0cc82",
+      "fileName": "./docs/DAG_PUBLICATION.md",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "3a96cceb3378ece438227540e9f656fd1fa4a181"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-408f2ee929058c9e991c5af8",
+      "fileName": "./init.sh",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "9af8f7a84872b0b7542d4a33d16bc30fcd4d686f"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-2a6c9b1f94e0fe04206a396f",
+      "fileName": "./requirements-sbom.txt",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0df2cea81cf1fba631b260fad2344874c5e69a0c"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-4d7c51b1efe9043e44439a94",
+      "fileName": "./requirements.txt",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "58101d6d2a68fd7abccc9d121f9b78545aa22a07"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-8e54d004f537254e873893c1",
+      "fileName": "./s3-gui/Dockerfile",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b9c5a6bc68a85e2cedf3f4d67102694be38a9f40"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-e3fe4c2e51a1c061269740b1",
+      "fileName": "./s3-gui/app.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "3dad7d1a546dbd8818cac3c33e0325e4a5c29661"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-e3b1043fa03bf5157205e36c",
+      "fileName": "./s3-gui/bucket_exports.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "4e613145bcb50a789a361f7e4d58170072adb4e4"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-7ab5737855c0a9b61b6028d3",
+      "fileName": "./s3-gui/requirements.txt",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "4eb6f6bc82adb76e5f761121b03788b47ef3b062"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-253cd3aafff8a82e724d0330",
+      "fileName": "./s3-gui/tests/test_bucket_exports.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "52b37c9fb6965cad0ab0ef935b955ad1ea6471f6"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-404e72d82fe684ce378faba1",
+      "fileName": "./sbom.config.json",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0f39f18b4629b9f430e32a6605a177e890e7b5e3"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-b3dd04c1d36f73956f8dabb4",
+      "fileName": "./scripts/generate-source-spdx.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "088b788250ba11ee6d4cbfd16ed7ac7677f460b9"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-8950219db3b6ee5b4d9139fd",
+      "fileName": "./scripts/generate_sbom.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "fa5e1f4549242366e0913044a2139a92da668165"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-65a5db1ae8f8e01ebdbbfafc",
+      "fileName": "./start.sh",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "9725a40dea1eecc4781a19e7a772b15ec558dfea"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-7c4cc7edd235b5b044e7861f",
+      "fileName": "./test_data/Baualtersklassen.gpkg",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "7398a458f891a0e3a41dcf41b5cd125de4af764d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-74bf3f49ead4bcf9ed88e4c9",
+      "fileName": "./test_data/cityjson-to-3d-tiles-example-payload-min.zip",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "83181701ada5167533f4f461ad5dc153ce1bb96c"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-9c1fb54294222efa87db17e3",
+      "fileName": "./test_data/cityjson-to-3d-tiles-example-payload.zip",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "e3ea2c03064bf1e3c358933bffda1479b82a4927"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-a3c8b6e5b38105f3dba286c6",
+      "fileName": "./tests/test_artifact_cleanup.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "a2d7f30fe9741170615b4b3b516be83a9dbd5d19"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-58825db4d6666ceea48f04cb",
+      "fileName": "./tests/test_enrichment_pipeline.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "634713a40455bfe8788e7370e98a7e00d3f683e1"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-File-9b6776cb2c53dc7e46bf9c4c",
+      "fileName": "./tests/test_terrain_pipeline.py",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "7771b11cabeaaacc3e32d0cc1a2e009a18808235"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "NOASSERTION"
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-SOURCE"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-2f754321d62f08ba8392b9b1"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-a3046da0d15a27e89f2afe63"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-618cd5b83d62060ba3d027e3"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-848eb2758cad1564a648c59f"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-bc37d034bad564583790a46f"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-a5de3e5871ffcc383a229484"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-400d38e5cfee181230373a8b"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-749a7f8f1afd45dd2534a9ac"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-c693279643b8cd5d248172d9"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-dfb14fbb9e7d095209ec4cfd"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-b335630551682c19a781afeb"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-7bb12142c0ac5d1bbb68688e"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-3378b775b13f3e7bcfc0d1cc"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-9e40a518cfe646dfac7e14ac"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-5fc8d2a7284f3e389385dcb2"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-cf1744fc33d2c8356e087912"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-2e5f90ce4d7fc06083d4ec53"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-744fb67cb9d3c2343a6d2c41"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-387d54a739a95c0584f9d6bd"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-1b52cf3c25c4ff10ed179d97"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-c0dfca43873b0757e150ae98"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-af9be90d965b7a003c866024"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-00c2f0e0f7df9444a8049f98"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-adcc88456476af4dfc2716d5"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-9d24a288864b7a1295890685"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-2ab59b084ae10cda1fdf781f"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-6a857602302321963cab6e1c"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-3643a60416e00acd312e6090"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-ab7c1ead782fddd4cdd8c97e"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-ae152247959e1254fba8ba62"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-100e40bdf5b2ca096fdb0698"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-5cdc1e082b26918155b564db"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-e130c20422b222535aec54c8"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-ed21bfb4bbcb889834b3f728"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-0c82b413a5e6802527b64fe1"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-f235bc65a5de13ac2c1575ff"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-108caea847b0d44de10dcb6b"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-587fe7e6f9629339f588078a"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-8fc6ae440dc80b09814c68f6"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-43cec8a6411107dfc0e8862d"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-3fde9d1a396e140fefc7676e"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-95ce44548f3f05c36ca0cc82"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-408f2ee929058c9e991c5af8"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-2a6c9b1f94e0fe04206a396f"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-4d7c51b1efe9043e44439a94"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-8e54d004f537254e873893c1"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-e3fe4c2e51a1c061269740b1"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-e3b1043fa03bf5157205e36c"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-7ab5737855c0a9b61b6028d3"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-253cd3aafff8a82e724d0330"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-404e72d82fe684ce378faba1"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-b3dd04c1d36f73956f8dabb4"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-8950219db3b6ee5b4d9139fd"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-65a5db1ae8f8e01ebdbbfafc"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-7c4cc7edd235b5b044e7861f"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-74bf3f49ead4bcf9ed88e4c9"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-9c1fb54294222efa87db17e3"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-a3c8b6e5b38105f3dba286c6"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-58825db4d6666ceea48f04cb"
+    },
+    {
+      "spdxElementId": "SPDXRef-SOURCE",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-9b6776cb2c53dc7e46bf9c4c"
+    }
+  ]
+}
